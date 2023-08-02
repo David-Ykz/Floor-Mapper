@@ -10,11 +10,20 @@ SCREEN_WIDTH = 1200
 SCREEN_HEIGHT = 800
 SIDEBAR_LENGTH = 200
 heading = 0.0
+xOffset = 200
+yOffset = 200
 xPos = (SCREEN_WIDTH-SIDEBAR_LENGTH)/2
 yPos = SCREEN_HEIGHT/2
+obstaclePositions = []
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 clock = pygame.time.Clock()
 running = True
+
+obstaclePositions.append([0, 0])
+obstaclePositions.append([400, 0])
+obstaclePositions.append([400, 400])
+obstaclePositions.append([0, 400])
+obstaclePositions.append([0, 0])
 
 while running:
     for event in pygame.event.get():
@@ -30,7 +39,7 @@ while running:
     if pygame.key.get_pressed()[pygame.K_w]:
         xPos += math.cos(heading)
         yPos += math.sin(heading)
-    elif pygame.key.get_pressed()[pygame.K_d]:
+    elif pygame.key.get_pressed()[pygame.K_s]:
         xPos -= math.cos(heading)
         yPos -= math.sin(heading)
 
@@ -38,6 +47,9 @@ while running:
     pygame.draw.rect(screen, (208, 225, 212), (SCREEN_WIDTH-SIDEBAR_LENGTH, 0, SIDEBAR_LENGTH, SCREEN_HEIGHT))
     pygame.draw.circle(screen, (0, 0, 0), (xPos, yPos), 20)
     pygame.draw.line(screen, (100, 100, 255), (xPos, yPos), (xPos + 60 * math.cos(heading), yPos + 60 * math.sin(heading)))
+
+    for i in range(len(obstaclePositions) - 1):
+        pygame.draw.line(screen, (0, 0, 0), (obstaclePositions[i][0] + xOffset, obstaclePositions[i][1] + yOffset), (obstaclePositions[i+1][0] + xOffset, obstaclePositions[i+1][1] + yOffset))
 
     pygame.display.update()
 
