@@ -1,3 +1,5 @@
+import math
+
 import pygame
 import time
 import random
@@ -6,6 +8,10 @@ import random
 pygame.init()
 SCREEN_WIDTH = 1200
 SCREEN_HEIGHT = 800
+SIDEBAR_LENGTH = 200
+heading = 0.0
+xPos = (SCREEN_WIDTH-SIDEBAR_LENGTH)/2
+yPos = SCREEN_HEIGHT/2
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 clock = pygame.time.Clock()
 running = True
@@ -15,25 +21,28 @@ while running:
         if event.type == pygame.QUIT:
             running = False
 
+
+    if pygame.key.get_pressed()[pygame.K_a]:
+        heading -= 0.05
+    elif pygame.key.get_pressed()[pygame.K_d]:
+        heading += 0.05
+
+    if pygame.key.get_pressed()[pygame.K_w]:
+        xPos += math.cos(heading)
+        yPos += math.sin(heading)
+    elif pygame.key.get_pressed()[pygame.K_d]:
+        xPos -= math.cos(heading)
+        yPos -= math.sin(heading)
+
     screen.fill((255, 255, 255))
+    pygame.draw.rect(screen, (208, 225, 212), (SCREEN_WIDTH-SIDEBAR_LENGTH, 0, SIDEBAR_LENGTH, SCREEN_HEIGHT))
+    pygame.draw.circle(screen, (0, 0, 0), (xPos, yPos), 20)
+    pygame.draw.line(screen, (100, 100, 255), (xPos, yPos), (xPos + 60 * math.cos(heading), yPos + 60 * math.sin(heading)))
 
-    rectX = []
-    rectY = []
-    colors = []
-    for i in range(SCREEN_HEIGHT):
-        for j in range(SCREEN_WIDTH):
-            pygame.event.get()
-            R = random.randint(0, 255)
-            G = random.randint(0, 255)
-            B = random.randint(0, 255)
-            rectX.append(j)
-            rectY.append(i)
-            colors.append((R, G, B))
-    #    pygame.draw.rect(screen, (R, G, B), (j, i, 1, 1))
-
-    for i in range(len(rectX)):
-        pygame.draw.rect(screen, colors[i], (rectX[i], rectY[i], 1, 1))
     pygame.display.update()
+
+
+
 
     # Position starts at (0, 0)
     # If heading is different from previous heading:
@@ -43,6 +52,6 @@ while running:
 
 
 
-#    clock.tick(120)  # limits FPS to 60
+    clock.tick(60)  # limits FPS to 60
 
 pygame.quit()
