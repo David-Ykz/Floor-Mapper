@@ -15,7 +15,6 @@ def drawLine(color, x1, y1, x2, y2):
     pygame.draw.line(screen, color, (x1, SCREEN_HEIGHT - y1), (x2, SCREEN_HEIGHT - y2))
 def calculateLineIntersection(m1, b1, m2, b2):
     if m1 == m2:
-        print("same slope")
         return -1
     x = (b2 - b1) / (m1 - m2)
     y = m1 * x + b1
@@ -23,7 +22,6 @@ def calculateLineIntersection(m1, b1, m2, b2):
 def calculateSegmentIntersection(segment1, segment2):
     # Check if both lines are vertical
     if segment1[0] == segment1[2] and segment2[0] == segment2[2]:
-        print("Vertical Parallel")
         return -1
     # First line is vertical
     if segment1[0] == segment1[2]:
@@ -34,26 +32,11 @@ def calculateSegmentIntersection(segment1, segment2):
     else:
         intersectionPoint = calculateLineIntersection(calculateSlope(segment1), intercept(segment1), calculateSlope(segment2), intercept(segment2))
         if intersectionPoint == -1:
-            print("Lines dont intersect")
             return -1
-
-#    lowerBoundX = max(segment1[0], segment2[0])
-#    lowerBoundY = max(segment1[1], segment2[1])
-#    upperBoundX = min(segment1[2], segment2[2])
-#    upperBoundY = min(segment1[3], segment2[3])
-#    drawLine((150, 150, 150), lowerBoundX, 0, lowerBoundX, SCREEN_HEIGHT)
-#    drawLine((150, 150, 150), 0, lowerBoundY, SCREEN_WIDTH, lowerBoundY)
-#    drawLine((150, 150, 150), upperBoundX, 0, upperBoundX, SCREEN_HEIGHT)
-#    drawLine((150, 150, 150), 0, upperBoundY, SCREEN_WIDTH, upperBoundY)
-
     lowerBoundX = max(min(segment1[0], segment1[2]), min(segment2[0], segment2[2]))
     lowerBoundY = max(min(segment1[1], segment1[3]), min(segment2[1], segment2[3]))
     upperBoundX = min(max(segment1[0], segment1[2]), max(segment2[0], segment2[2]))
     upperBoundY = min(max(segment1[1], segment1[3]), max(segment2[1], segment2[3]))
-#    drawLine((150, 150, 150), lowerBoundX, 0, lowerBoundX, SCREEN_HEIGHT)
-#    drawLine((150, 150, 150), 0, lowerBoundY, SCREEN_WIDTH, lowerBoundY)
-#    drawLine((150, 150, 150), upperBoundX, 0, upperBoundX, SCREEN_HEIGHT)
-#    drawLine((150, 150, 150), 0, upperBoundY, SCREEN_WIDTH, upperBoundY)
     if upperBoundX >= intersectionPoint[0] >= lowerBoundX and upperBoundY >= intersectionPoint[1] >= lowerBoundY:
         return intersectionPoint
     else:
@@ -70,11 +53,11 @@ yPos = SCREEN_HEIGHT/2
 screen = pygame.display.set_mode((SCREEN_WIDTH + SIDEBAR_LENGTH, SCREEN_HEIGHT))
 clock = pygame.time.Clock()
 running = True
-basicBoxExample = [[400, 200], [800, 200], [800, 600], [400, 600], [400, 200]]
-complicatedShapeExample = [[200, 100], [1000, 100], [800, 700], [400, 700], [400, 400], [200, 400], [200, 100]]
-#boxObstacleExample = [[200, 200], [800, 200], [800, 600], [200, 600], [200, 200]]
+basicBoxExample = [[(400, 200), (800, 200), (800, 600), (400, 600), (400, 200)]]
+complicatedShapeExample = [[(200, 100), (1000, 100), (800, 700), (400, 700), (400, 400), (200, 400), (200, 100)]]
+boxObstacleExample = [[(200, 200), (900, 200), (900, 600), (200, 600), (200, 200)], [(300, 300), (400, 300), (400, 350), (300, 350), (300, 300)]]
 
-obstaclePositions = complicatedShapeExample
+obstaclePositions = boxObstacleExample
 #obstaclePositions = [[800, 600], [400, 600]]
 
 
@@ -84,9 +67,9 @@ while running:
             running = False
 
     if pygame.key.get_pressed()[pygame.K_LEFT]:
-        heading += 0.02
+        heading += 0.05
     elif pygame.key.get_pressed()[pygame.K_RIGHT]:
-        heading -= 0.02
+        heading -= 0.05
     if pygame.key.get_pressed()[pygame.K_UP]:
         xPos += math.cos(heading)
         yPos += math.sin(heading)
@@ -114,14 +97,15 @@ while running:
     drawLine((100, 100, 255), xPos, yPos, segment1[2], segment1[3])
 
     intersections = []
-    for i in range(len(obstaclePositions) - 1):
-        drawLine((0, 0, 0), obstaclePositions[i][0], obstaclePositions[i][1], obstaclePositions[i+1][0], obstaclePositions[i+1][1])
-        segment2 = [obstaclePositions[i][0], obstaclePositions[i][1], obstaclePositions[i+1][0], obstaclePositions[i+1][1]]
-        drawCircle((0, 255, 0), segment2[0], segment2[1], 5)
-        drawCircle((0, 255, 0), segment2[2], segment2[3], 5)
-        intersectionPoint = calculateSegmentIntersection(segment1, segment2)
-        if intersectionPoint != -1:
-            intersections.append(intersectionPoint)
+    for eachShape in obstaclePositions:
+        for i in range(len(eachShape) - 1):
+            drawLine((0, 0, 0), eachShape[i][0], eachShape[i][1], eachShape[i+1][0], eachShape[i+1][1])
+            segment2 = [eachShape[i][0], eachShape[i][1], eachShape[i+1][0], eachShape[i+1][1]]
+            drawCircle((0, 255, 0), segment2[0], segment2[1], 5)
+            drawCircle((0, 255, 0), segment2[2], segment2[3], 5)
+            intersectionPoint = calculateSegmentIntersection(segment1, segment2)
+            if intersectionPoint != -1:
+                intersections.append(intersectionPoint)
 
     closestIntersection = []
     if len(intersections) >= 1:
@@ -136,7 +120,7 @@ while running:
     pygame.display.update()
 
 
-    
+
 
     # Position starts at (0, 0)
     # If heading is different from previous heading:
