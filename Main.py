@@ -65,13 +65,16 @@ SCREEN_WIDTH = 1200
 SCREEN_HEIGHT = 800
 SIDEBAR_LENGTH = 200
 heading = math.pi/2
-heading = 1.5507963267948965
 xPos = SCREEN_WIDTH/2
 yPos = SCREEN_HEIGHT/2
 screen = pygame.display.set_mode((SCREEN_WIDTH + SIDEBAR_LENGTH, SCREEN_HEIGHT))
 clock = pygame.time.Clock()
 running = True
-obstaclePositions = [[400, 200], [800, 200], [800, 600], [400, 600], [400, 200]]
+basicBoxExample = [[400, 200], [800, 200], [800, 600], [400, 600], [400, 200]]
+complicatedShapeExample = [[200, 100], [1000, 100], [800, 700], [400, 700], [400, 400], [200, 400], [200, 100]]
+#boxObstacleExample = [[200, 200], [800, 200], [800, 600], [200, 600], [200, 200]]
+
+obstaclePositions = complicatedShapeExample
 #obstaclePositions = [[800, 600], [400, 600]]
 
 
@@ -81,9 +84,9 @@ while running:
             running = False
 
     if pygame.key.get_pressed()[pygame.K_LEFT]:
-        heading += 0.01
+        heading += 0.02
     elif pygame.key.get_pressed()[pygame.K_RIGHT]:
-        heading -= 0.01
+        heading -= 0.02
     if pygame.key.get_pressed()[pygame.K_UP]:
         xPos += math.cos(heading)
         yPos += math.sin(heading)
@@ -110,6 +113,7 @@ while running:
             segment1 = [xPos, yPos, SCREEN_WIDTH, yPos + slope * (SCREEN_WIDTH - xPos)]
     drawLine((100, 100, 255), xPos, yPos, segment1[2], segment1[3])
 
+    intersections = []
     for i in range(len(obstaclePositions) - 1):
         drawLine((0, 0, 0), obstaclePositions[i][0], obstaclePositions[i][1], obstaclePositions[i+1][0], obstaclePositions[i+1][1])
         segment2 = [obstaclePositions[i][0], obstaclePositions[i][1], obstaclePositions[i+1][0], obstaclePositions[i+1][1]]
@@ -117,12 +121,22 @@ while running:
         drawCircle((0, 255, 0), segment2[2], segment2[3], 5)
         intersectionPoint = calculateSegmentIntersection(segment1, segment2)
         if intersectionPoint != -1:
-            drawCircle((255, 0, 0), intersectionPoint[0], intersectionPoint[1], 5)
+            intersections.append(intersectionPoint)
+
+    closestIntersection = []
+    if len(intersections) >= 1:
+        closestIntersection = intersections[0]
+        for intersection in intersections:
+            if distance(xPos, yPos, intersection[0], intersection[1]) < distance(xPos, yPos, closestIntersection[0], closestIntersection[1]):
+                closestIntersection = intersection
+
+    if len(closestIntersection) > 0:
+        drawCircle((255, 0, 0), closestIntersection[0], closestIntersection[1], 5)
 
     pygame.display.update()
 
 
-
+    
 
     # Position starts at (0, 0)
     # If heading is different from previous heading:
