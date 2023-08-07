@@ -20,8 +20,14 @@ def drawCircle(color, x, y, r):
     pygame.draw.circle(screen, color, (x, SCREEN_HEIGHT - y), r)
 def drawRectangle(color, x, y, w, h):
     pygame.draw.rect(screen, color, (x, SCREEN_HEIGHT - y, w, h))
+def drawTransparentRectangle(color, x, y, w, h, t):
+    pygame.draw.rect(screen, color, (x, SCREEN_HEIGHT - y, w, h), t)
 def drawLine(color, x1, y1, x2, y2):
     pygame.draw.line(screen, color, (x1, SCREEN_HEIGHT - y1), (x2, SCREEN_HEIGHT - y2))
+def writeText(color, text, size, x, y):
+    font = pygame.font.SysFont("arial", size).render(text, True, color)
+    screen.blit(font, (x, SCREEN_HEIGHT - y))
+
 def calculateLineIntersection(m1, b1, m2, b2):
     if m1 == m2:
         return -1
@@ -72,6 +78,8 @@ def circleLineSegmentIntersection(circleX, circleY, radius, segment):
         if max(segment[0], segment[2]) >= eachIntersection >= min(segment[0], segment[2]):
             return True
     return False
+def pointInsideRectangle(x, y, w, h, pointX, pointY):
+    return (x + w >= pointX >= x) and (y >= pointY >= y - h)
 def checkCollisions(circleX, circleY, radius, allObstacles):
     anyCollision = False
     for eachObstacle in allObstacles:
@@ -86,6 +94,10 @@ def checkCollisions(circleX, circleY, radius, allObstacles):
 
 # pygame setup
 pygame.init()
+pygame.font.init()
+BLACK = (0, 0, 0)
+WHITE = (255, 255, 255)
+
 SCREEN_WIDTH = 1200
 SCREEN_HEIGHT = 800
 SIDEBAR_LENGTH = 200
@@ -96,15 +108,21 @@ roombaRadius = 20
 screen = pygame.display.set_mode((SCREEN_WIDTH + SIDEBAR_LENGTH, SCREEN_HEIGHT))
 clock = pygame.time.Clock()
 running = True
+allExamples = [[[(400, 200), (800, 200), (800, 600), (400, 600), (400, 200)]], [[(200, 100), (1000, 100), (800, 700), (400, 700), (400, 400), (200, 400), (200, 100)]], [[(200, 200), (900, 200), (900, 600), (200, 600), (200, 200)], [(300, 300), (400, 300), (400, 350), (300, 350), (300, 300)]]]
 basicBoxExample = [[(400, 200), (800, 200), (800, 600), (400, 600), (400, 200)]]
 complicatedShapeExample = [[(200, 100), (1000, 100), (800, 700), (400, 700), (400, 400), (200, 400), (200, 100)]]
 boxObstacleExample = [[(200, 200), (900, 200), (900, 600), (200, 600), (200, 200)], [(300, 300), (400, 300), (400, 350), (300, 350), (300, 300)]]
-
-obstaclePositions = boxObstacleExample
-#obstaclePositions = [[800, 600], [400, 600]]
-
+obstaclePositions = allExamples[0]
+recordingData = False
+headingDistanceData = []
+delay = 0
+notificationDisplayTime = 0
 
 while running:
+    if delay > 0:
+        delay -= 1
+    if notificationDisplayTime > 0:
+        notificationDisplayTime -= 1
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
@@ -127,7 +145,84 @@ while running:
             yPos += math.sin(heading)
 
     screen.fill((255, 255, 255))
-    drawRectangle((208, 225, 212), SCREEN_WIDTH, SCREEN_HEIGHT, SIDEBAR_LENGTH, SCREEN_HEIGHT)
+    drawRectangle((67, 80, 88), SCREEN_WIDTH, SCREEN_HEIGHT, SIDEBAR_LENGTH, SCREEN_HEIGHT)
+
+    # ------------------ Draws Side Panel ------------------ #
+    for i in range(6):
+        rectX = SCREEN_WIDTH + 20 + 60 * (i % 3)
+        if i > 2:
+            rectY = SCREEN_HEIGHT - 100
+        else:
+            rectY = SCREEN_HEIGHT - 40
+        rectWidth = 40
+        rectHeight = 40
+        drawTransparentRectangle((125, 187, 195), rectX, rectY, 40, 40, 1)
+        writeText((125, 187, 195), str(i + 1), 20, rectX + 15, rectY - 7)
+        if pygame.mouse.get_pressed()[0]:
+            mousePosition = pygame.mouse.get_pos()
+            if pointInsideRectangle(rectX, rectY, rectWidth, rectHeight, mousePosition[0], SCREEN_HEIGHT - mousePosition[1]):
+                obstaclePositions = allExamples[i]
+                xPos = SCREEN_WIDTH/2
+                yPos = SCREEN_HEIGHT/2
+                recordingData = False
+
+
+    rectX = SCREEN_WIDTH + 20
+    rectY = SCREEN_HEIGHT - 300
+    rectWidth = SIDEBAR_LENGTH - 40
+    rectHeight = 40
+    drawTransparentRectangle((138, 131, 195), rectX, rectY, rectWidth, rectHeight, 1)
+    if recordingData:
+        writeText((138, 131, 195), "Stop Recording", 24, rectX + 12, rectY - 5)
+    else:
+        writeText((138, 131, 195), "Start Recording", 24, rectX + 12, rectY - 5)
+    if pygame.mouse.get_pressed()[0] and delay == 0:
+        mousePosition = pygame.mouse.get_pos()
+        if pointInsideRectangle(rectX, rectY, rectWidth, rectHeight, mousePosition[0], SCREEN_HEIGHT - mousePosition[1]):
+            recordingData = not recordingData
+            if recordingData:
+                headingDistanceData = []
+            delay = 15
+
+    rectX = SCREEN_WIDTH + 20
+    rectY = SCREEN_HEIGHT - 400
+    rectWidth = SIDEBAR_LENGTH - 40
+    rectHeight = 40
+    drawTransparentRectangle((138, 131, 195), rectX, rectY, rectWidth, rectHeight, 1)
+    writeText((138, 131, 195), "Load Data", 24, rectX + 12, rectY - 5)
+    if pygame.mouse.get_pressed()[0] and delay == 0:
+        mousePosition = pygame.mouse.get_pos()
+        if pointInsideRectangle(rectX, rectY, rectWidth, rectHeight, mousePosition[0], SCREEN_HEIGHT - mousePosition[1]):
+            pass
+
+
+    rectX = SCREEN_WIDTH + 20
+    rectY = SCREEN_HEIGHT - 500
+    rectWidth = SIDEBAR_LENGTH - 40
+    rectHeight = 40
+    drawTransparentRectangle((138, 131, 195), rectX, rectY, rectWidth, rectHeight, 1)
+    writeText((138, 131, 195), "Run Simulation", 24, rectX + 12, rectY - 5)
+    if pygame.mouse.get_pressed()[0] and delay == 0:
+        mousePosition = pygame.mouse.get_pos()
+        if pointInsideRectangle(rectX, rectY, rectWidth, rectHeight, mousePosition[0], SCREEN_HEIGHT - mousePosition[1]):
+            if len(headingDistanceData) == 0:
+                notificationDisplayTime = 50
+            pass
+            # ???
+
+    # Iteratively form a line with the next closest neighbour, if the slope of the line deviates then you know there is a change in direction
+
+    # Start with random point P
+    # Pick the closest point to P and form a line, measuring the slope and add it to a set visitedPoints and array [[p1, p2, p3], [p1, p2], etc, where each subarr is a collection of points that form a line]
+    # Pick the next closest point, if the slope is within bounds K then add the point to the list and set
+    # If the slope deviation is larger than bounds K, then create a new starting point P'
+    # Repeat to pick the closest points to P' that are not in the set
+
+
+
+    if notificationDisplayTime > 0:
+        writeText((255, 0, 0), "No data available", 20, rectX, 50)
+
     drawCircle((0, 0, 0), xPos, yPos, roombaRadius)
     drawLine((100, 100, 255), xPos, yPos, xPos + 60 * math.cos(heading), yPos + 60 * math.sin(heading))
 
@@ -150,8 +245,6 @@ while running:
         for i in range(len(eachShape) - 1):
             drawLine((0, 0, 0), eachShape[i][0], eachShape[i][1], eachShape[i+1][0], eachShape[i+1][1])
             segment2 = [eachShape[i][0], eachShape[i][1], eachShape[i+1][0], eachShape[i+1][1]]
-            if circleLineSegmentIntersection(xPos, yPos, roombaRadius, segment2):
-                print("True")
             intersectionPoint = calculateSegmentIntersection(segment1, segment2)
             if intersectionPoint != -1:
                 intersections.append(intersectionPoint)
@@ -163,8 +256,13 @@ while running:
             if distance(xPos, yPos, intersection[0], intersection[1]) < distance(xPos, yPos, closestIntersection[0], closestIntersection[1]):
                 closestIntersection = intersection
 
+
+
     if len(closestIntersection) > 0:
         drawCircle((255, 0, 0), closestIntersection[0], closestIntersection[1], 5)
+        if recordingData:
+            headingDistanceData.append((round(math.degrees(heading) % 360, 4), round(distance(xPos, yPos, closestIntersection[0], closestIntersection[1]), 4)))
+#            print(round(math.degrees(heading) % 360, 4), round(distance(xPos, yPos, closestIntersection[0], closestIntersection[1]), 4))
 
     pygame.display.update()
 
