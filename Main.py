@@ -88,6 +88,30 @@ def checkCollisions(circleX, circleY, radius, allObstacles):
             if circleLineSegmentIntersection(circleX, circleY, radius, segment):
                 anyCollision = True
     return anyCollision
+def headingDistanceToPoints(data):
+    x, y = 0, 0
+    previousHeading = 0
+    pointX, pointY = 0, 0
+    allPoints = set()
+    # Position starts at (0, 0)
+    # If heading is different from previous heading:
+    # Take distance and heading to calculate a vector that is added to current position to find the location of a wall/obstacle
+    # If heading is same as previous heading:
+    # Update position based on previous point
+    for dataPoint in data:
+        currentHeading = dataPoint[0]
+        distanceToObstacle = dataPoint[1]
+        if currentHeading != previousHeading:
+            pointX = x + distanceToObstacle * math.cos(math.radians(currentHeading))
+            pointY = y + distanceToObstacle * math.sin(math.radians(currentHeading))
+            allPoints.add((pointX, pointY))
+        else:
+            deltaDistance = distance(x, y, pointX, pointY) - distanceToObstacle
+            x += deltaDistance * math.cos(math.radians(currentHeading))
+            y += deltaDistance * math.sin(math.radians(currentHeading))
+
+    return allPoints
+
 
 
 
@@ -115,10 +139,13 @@ boxObstacleExample = [[(200, 200), (900, 200), (900, 600), (200, 600), (200, 200
 obstaclePositions = allExamples[0]
 recordingData = False
 headingDistanceData = []
+observedPoints = set()
 delay = 0
 notificationDisplayTime = 0
+displayPoints = False
 
 while running:
+    # -------------------------------------------------- Handles timer for displaying information -------------------------------------------------- #
     if delay > 0:
         delay -= 1
     if notificationDisplayTime > 0:
@@ -127,6 +154,7 @@ while running:
         if event.type == pygame.QUIT:
             running = False
 
+    # -------------------------------------------------- Manages user input -------------------------------------------------- #
     if pygame.key.get_pressed()[pygame.K_LEFT]:
         heading += 0.05
     elif pygame.key.get_pressed()[pygame.K_RIGHT]:
@@ -144,10 +172,9 @@ while running:
             xPos += math.cos(heading)
             yPos += math.sin(heading)
 
+    # -------------------------------------------------- Draws everything on the screen -------------------------------------------------- #
     screen.fill((255, 255, 255))
     drawRectangle((67, 80, 88), SCREEN_WIDTH, SCREEN_HEIGHT, SIDEBAR_LENGTH, SCREEN_HEIGHT)
-
-    # ------------------ Draws Side Panel ------------------ #
     for i in range(6):
         rectX = SCREEN_WIDTH + 20 + 60 * (i % 3)
         if i > 2:
@@ -165,8 +192,6 @@ while running:
                 xPos = SCREEN_WIDTH/2
                 yPos = SCREEN_HEIGHT/2
                 recordingData = False
-
-
     rectX = SCREEN_WIDTH + 20
     rectY = SCREEN_HEIGHT - 300
     rectWidth = SIDEBAR_LENGTH - 40
@@ -183,7 +208,6 @@ while running:
             if recordingData:
                 headingDistanceData = []
             delay = 15
-
     rectX = SCREEN_WIDTH + 20
     rectY = SCREEN_HEIGHT - 400
     rectWidth = SIDEBAR_LENGTH - 40
@@ -194,21 +218,25 @@ while running:
         mousePosition = pygame.mouse.get_pos()
         if pointInsideRectangle(rectX, rectY, rectWidth, rectHeight, mousePosition[0], SCREEN_HEIGHT - mousePosition[1]):
             pass
-
-
     rectX = SCREEN_WIDTH + 20
     rectY = SCREEN_HEIGHT - 500
     rectWidth = SIDEBAR_LENGTH - 40
     rectHeight = 40
     drawTransparentRectangle((138, 131, 195), rectX, rectY, rectWidth, rectHeight, 1)
-    writeText((138, 131, 195), "Run Simulation", 24, rectX + 12, rectY - 5)
+    if displayPoints:
+        writeText((138, 131, 195), "Stop Simulation", 24, rectX + 10, rectY - 5)
+    else:
+        writeText((138, 131, 195), "Run Simulation", 24, rectX + 12, rectY - 5)
+
     if pygame.mouse.get_pressed()[0] and delay == 0:
         mousePosition = pygame.mouse.get_pos()
         if pointInsideRectangle(rectX, rectY, rectWidth, rectHeight, mousePosition[0], SCREEN_HEIGHT - mousePosition[1]):
             if len(headingDistanceData) == 0:
                 notificationDisplayTime = 50
-            pass
-            # ???
+            else:
+                observedPoints = headingDistanceToPoints(headingDistanceData)
+                displayPoints = not displayPoints
+                delay = 15
 
     # Iteratively form a line with the next closest neighbour, if the slope of the line deviates then you know there is a change in direction
 
@@ -217,17 +245,17 @@ while running:
     # Pick the next closest point, if the slope is within bounds K then add the point to the list and set
     # If the slope deviation is larger than bounds K, then create a new starting point P'
     # Repeat to pick the closest points to P' that are not in the set
-
-
-
     if notificationDisplayTime > 0:
         writeText((255, 0, 0), "No data available", 20, rectX, 50)
+    if displayPoints:
+        for eachPoint in observedPoints:
+            drawCircle((100, 255, 100), eachPoint[0] + SCREEN_WIDTH / 2, eachPoint[1] + SCREEN_HEIGHT / 2, 2)
 
     drawCircle((0, 0, 0), xPos, yPos, roombaRadius)
     drawLine((100, 100, 255), xPos, yPos, xPos + 60 * math.cos(heading), yPos + 60 * math.sin(heading))
 
 
-    # -------------------- Calculates line based on roomba heading -------------------- #
+    # -------------------------------------------------- Calculates line based on roomba heading -------------------------------------------------- #
     if math.sin(heading) == 1:  # Points straight down
         segment1 = [xPos, yPos, xPos, SCREEN_HEIGHT]
     elif math.sin(heading) == -1:  # Points straight up
@@ -269,11 +297,6 @@ while running:
 
 
 
-    # Position starts at (0, 0)
-    # If heading is different from previous heading:
-    # Take distance and heading to calculate a vector that is added to current position to find the location of a wall/obstacle
-    # If heading is same as previous heading:
-    # Update position based on previous point
 
 
 
