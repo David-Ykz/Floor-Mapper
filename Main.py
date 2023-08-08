@@ -19,9 +19,11 @@ def quadraticFormula(a, b, c):
 # Pygame Functions
 def drawCircle(color, x, y, r):
     pygame.draw.circle(screen, color, (x, SCREEN_HEIGHT - y), r)
+def drawHollowCircle(color, x, y, r, t):
+    pygame.draw.circle(screen, color, (x, SCREEN_HEIGHT - y), r, t)
 def drawRectangle(color, x, y, w, h):
     pygame.draw.rect(screen, color, (x, SCREEN_HEIGHT - y, w, h))
-def drawTransparentRectangle(color, x, y, w, h, t):
+def drawHollowRectangle(color, x, y, w, h, t):
     pygame.draw.rect(screen, color, (x, SCREEN_HEIGHT - y, w, h), t)
 def drawLine(color, x1, y1, x2, y2):
     pygame.draw.line(screen, color, (x1, SCREEN_HEIGHT - y1), (x2, SCREEN_HEIGHT - y2))
@@ -103,18 +105,23 @@ def headingDistanceToPoints(x, y, data):
     for dataPoint in data:
         currentHeading = dataPoint[0]
         distanceToObstacle = dataPoint[1]
-        if dataPoint[2]:
-            print("sdkfjsdhfjkh")
+        currentlyMoving = dataPoint[2]
+        averageVelocity = dataPoint[3]
+        if currentlyMoving:
+            if currentHeading != previousHeading:
+                pointX = x + (distanceToObstacle + averageVelocity) * math.cos(math.radians(currentHeading))
+                pointY = y + (distanceToObstacle + averageVelocity) * math.sin(math.radians(currentHeading))
+                previousHeading = currentHeading
+                allPoints.add((pointX, pointY))
             deltaDistance = distance(x, y, pointX, pointY) - distanceToObstacle
             x += deltaDistance * math.cos(math.radians(currentHeading))
             y += deltaDistance * math.sin(math.radians(currentHeading))
-        if currentHeading != previousHeading:
+        elif currentHeading != previousHeading:
             pointX = x + distanceToObstacle * math.cos(math.radians(currentHeading))
             pointY = y + distanceToObstacle * math.sin(math.radians(currentHeading))
             allPoints.add((pointX, pointY))
             previousHeading = currentHeading
-        positionData.append((x, y))
-
+        positionData.append((x, y, currentHeading))
     return allPoints, positionData
 
 # Pygame/Program Initialization
@@ -170,14 +177,6 @@ while running:
             xPos -= math.cos(heading)
             yPos -= math.sin(heading)
             isMoving = False
-    elif pygame.key.get_pressed()[pygame.K_DOWN]:
-        xPos -= math.cos(heading)
-        yPos -= math.sin(heading)
-        isMoving = True
-        if checkCollisions(xPos, yPos, roombaRadius, obstaclePositions):
-            xPos += math.cos(heading)
-            yPos += math.sin(heading)
-            isMoving = False
     else:
         isMoving = False
 
@@ -193,7 +192,7 @@ while running:
             rectY = SCREEN_HEIGHT - 40
         rectWidth = 40
         rectHeight = 40
-        drawTransparentRectangle((125, 187, 195), rectX, rectY, 40, 40, 1)
+        drawHollowRectangle((125, 187, 195), rectX, rectY, 40, 40, 1)
         writeText((125, 187, 195), str(i + 1), 20, rectX + 15, rectY - 7)
         if pygame.mouse.get_pressed()[0]:
             mousePosition = pygame.mouse.get_pos()
@@ -207,7 +206,7 @@ while running:
     rectY = SCREEN_HEIGHT - 300
     rectWidth = SIDEBAR_WIDTH - 40
     rectHeight = 40
-    drawTransparentRectangle((138, 131, 195), rectX, rectY, rectWidth, rectHeight, 1)
+    drawHollowRectangle((138, 131, 195), rectX, rectY, rectWidth, rectHeight, 1)
     if isRecording:
         writeText((138, 131, 195), "Stop Recording", 24, rectX + 12, rectY - 5)
     else:
@@ -225,7 +224,7 @@ while running:
     rectY = SCREEN_HEIGHT - 400
     rectWidth = SIDEBAR_WIDTH - 40
     rectHeight = 40
-    drawTransparentRectangle((138, 131, 195), rectX, rectY, rectWidth, rectHeight, 1)
+    drawHollowRectangle((138, 131, 195), rectX, rectY, rectWidth, rectHeight, 1)
     writeText((138, 131, 195), "Load Data", 24, rectX + 12, rectY - 5)
     if pygame.mouse.get_pressed()[0] and delay == 0:
         mousePosition = pygame.mouse.get_pos()
@@ -236,7 +235,7 @@ while running:
     rectY = SCREEN_HEIGHT - 500
     rectWidth = SIDEBAR_WIDTH - 40
     rectHeight = 40
-    drawTransparentRectangle((138, 131, 195), rectX, rectY, rectWidth, rectHeight, 1)
+    drawHollowRectangle((138, 131, 195), rectX, rectY, rectWidth, rectHeight, 1)
     if displayPoints:
         writeText((138, 131, 195), "Stop Simulation", 24, rectX + 10, rectY - 5)
     else:
@@ -267,7 +266,11 @@ while running:
         for eachPoint in estimatedPoints:
             drawCircle((100, 255, 100), eachPoint[0], eachPoint[1], 2)
         if positionIndex < len(pastPositions):
-            drawCircle((255, 100, 100), pastPositions[positionIndex][0], pastPositions[positionIndex][1], 10)
+            retraceX = pastPositions[positionIndex][0]
+            retraceY = pastPositions[positionIndex][1]
+            retraceHeading = pastPositions[positionIndex][2]
+            drawHollowCircle((0, 0, 0), retraceX, retraceY, 10, 1)
+            drawLine((100, 100, 255), retraceX, retraceY, retraceX + 30 * math.cos(math.radians(retraceHeading)), retraceY + 30 * math.sin(math.radians(retraceHeading)))
             positionIndex += 1
         else:
             displayPoints = False
@@ -308,9 +311,9 @@ while running:
 
 
     if len(closestIntersection) > 0:
-        drawCircle((255, 0, 0), closestIntersection[0], closestIntersection[1], 5)
+#        drawCircle((255, 0, 0), closestIntersection[0], closestIntersection[1], 5)
         if isRecording:
-            recordedData.append((round(math.degrees(heading) % 360, 4), round(distance(xPos, yPos, closestIntersection[0], closestIntersection[1]), 4), isMoving))
+            recordedData.append((round(math.degrees(heading) % 360, 4), round(distance(xPos, yPos, closestIntersection[0], closestIntersection[1]), 4), isMoving, 1))
 #            print(round(math.degrees(heading) % 360, 4), round(distance(xPos, yPos, closestIntersection[0], closestIntersection[1]), 4))
 
     pygame.display.update()
