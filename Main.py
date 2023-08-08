@@ -1,21 +1,6 @@
 import math
 import pygame
 
-# Math Helper Functions
-def distance(x1, y1, x2, y2):
-    return math.sqrt((x1-x2)**2 + (y1-y2)**2)
-def calculateSlope(segment):
-    return (segment[3] - segment[1]) / (segment[2] - segment[0])
-def calculateIntercept(segment):
-    return segment[1] - calculateSlope(segment) * segment[0]
-def quadraticFormula(a, b, c):
-    discriminant = b ** 2 - 4 * a * c
-    if discriminant < 0:
-        return []
-    elif discriminant == 0:
-        return [-b / (2 * a)]
-    else:
-        return [(-b + math.sqrt(discriminant)) / (2 * a), (-b - math.sqrt(discriminant)) / (2 * a)]
 # Pygame Functions
 def drawCircle(color, x, y, r):
     pygame.draw.circle(screen, color, (x, SCREEN_HEIGHT - y), r)
@@ -30,67 +15,6 @@ def drawLine(color, x1, y1, x2, y2):
 def writeText(color, text, size, x, y):
     font = pygame.font.SysFont("arial", size).render(text, True, color)
     screen.blit(font, (x, SCREEN_HEIGHT - y))
-# Intersection/Collision Logic
-def calculateLineIntersection(m1, b1, m2, b2):
-    if m1 == m2:
-        return -1
-    x = (b2 - b1) / (m1 - m2)
-    y = m1 * x + b1
-    return round(x, 4), round(y, 4)
-def calculateSegmentIntersection(segment1, segment2):
-    # Check if both lines are vertical
-    if segment1[0] == segment1[2] and segment2[0] == segment2[2]:
-        return -1
-    # First line is vertical
-    if segment1[0] == segment1[2]:
-        intersectionPoint = (segment1[0], calculateSlope(segment2) * segment1[0] + calculateIntercept(segment2))
-    # Second line is vertical
-    elif segment2[0] == segment2[2]:
-        intersectionPoint = (segment2[0], calculateSlope(segment1) * segment2[0] + calculateIntercept(segment1))
-    else:
-        intersectionPoint = calculateLineIntersection(calculateSlope(segment1), calculateIntercept(segment1), calculateSlope(segment2), calculateIntercept(segment2))
-        if intersectionPoint == -1:
-            return -1
-    lowerBoundX = max(min(segment1[0], segment1[2]), min(segment2[0], segment2[2]))
-    lowerBoundY = max(min(segment1[1], segment1[3]), min(segment2[1], segment2[3]))
-    upperBoundX = min(max(segment1[0], segment1[2]), max(segment2[0], segment2[2]))
-    upperBoundY = min(max(segment1[1], segment1[3]), max(segment2[1], segment2[3]))
-    if upperBoundX >= intersectionPoint[0] >= lowerBoundX and upperBoundY >= intersectionPoint[1] >= lowerBoundY:
-        return intersectionPoint
-    else:
-        return -1
-def circleLineSegmentIntersection(circleX, circleY, radius, segment):
-    if segment[0] == segment[2]: # Vertical Line
-        if abs(circleX - segment[0]) < radius:
-            yDistance = math.sqrt(radius ** 2 - (circleX - segment[0]) ** 2)
-            if max(segment[1], segment[3]) >= circleY + yDistance >= min(segment[1], segment[3]):
-                return True
-            elif max(segment[1], segment[3]) >= circleY - yDistance >= min(segment[1], segment[3]):
-                return True
-        return False
-
-    lineSlope = calculateSlope(segment)
-    intercept = calculateIntercept(segment)
-    a = 1 + lineSlope ** 2
-    b = -2 * circleX + 2 * lineSlope * (intercept - circleY)
-    c = circleX ** 2 + (intercept - circleY) ** 2 - radius ** 2
-    pointsOfIntersection = quadraticFormula(a, b, c)
-    if len(pointsOfIntersection) == 0:
-        return False
-    for eachIntersection in pointsOfIntersection:
-        if max(segment[0], segment[2]) >= eachIntersection >= min(segment[0], segment[2]):
-            return True
-    return False
-def pointInsideRectangle(x, y, w, h, pointX, pointY):
-    return (x + w >= pointX >= x) and (y >= pointY >= y - h)
-def checkCollisions(circleX, circleY, radius, allObstacles):
-    anyCollision = False
-    for eachObstacle in allObstacles:
-        for i in range(len(eachObstacle) - 1):
-            segment = [eachObstacle[i][0], eachObstacle[i][1], eachObstacle[i+1][0], eachObstacle[i+1][1]]
-            if circleLineSegmentIntersection(circleX, circleY, radius, segment):
-                anyCollision = True
-    return anyCollision
 # Algorithm Logic
 def headingDistanceToPoints(x, y, data):
     previousHeading = 0
@@ -308,22 +232,11 @@ while running:
             if distance(xPos, yPos, intersection[0], intersection[1]) < distance(xPos, yPos, closestIntersection[0], closestIntersection[1]):
                 closestIntersection = intersection
 
-
-
     if len(closestIntersection) > 0:
-#        drawCircle((255, 0, 0), closestIntersection[0], closestIntersection[1], 5)
         if isRecording:
             recordedData.append((round(math.degrees(heading) % 360, 4), round(distance(xPos, yPos, closestIntersection[0], closestIntersection[1]), 4), isMoving, 1))
-#            print(round(math.degrees(heading) % 360, 4), round(distance(xPos, yPos, closestIntersection[0], closestIntersection[1]), 4))
 
     pygame.display.update()
-
-
-
-
-
-
-
     clock.tick(60)  # limits FPS to 60
 
 pygame.quit()
