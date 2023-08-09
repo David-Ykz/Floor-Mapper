@@ -1,52 +1,44 @@
-import math
 import pygame
+from Math import *
+from Algorithm import *
 
 # Pygame Functions
-def drawCircle(color, x, y, r):
-    pygame.draw.circle(screen, color, (x, SCREEN_HEIGHT - y), r)
-def drawHollowCircle(color, x, y, r, t):
-    pygame.draw.circle(screen, color, (x, SCREEN_HEIGHT - y), r, t)
+def drawCircle(color, p, r):
+    pygame.draw.circle(screen, color, (p.x, SCREEN_HEIGHT - p.y), r)
+def drawHollowCircle(color, p, r, t):
+    pygame.draw.circle(screen, color, (p.x, SCREEN_HEIGHT - p.y), r, t)
 def drawRectangle(color, x, y, w, h):
     pygame.draw.rect(screen, color, (x, SCREEN_HEIGHT - y, w, h))
-def drawHollowRectangle(color, x, y, w, h, t):
-    pygame.draw.rect(screen, color, (x, SCREEN_HEIGHT - y, w, h), t)
-def drawLine(color, x1, y1, x2, y2):
-    pygame.draw.line(screen, color, (x1, SCREEN_HEIGHT - y1), (x2, SCREEN_HEIGHT - y2))
+def drawHollowRectangle(color, rectangle, t):
+    pygame.draw.rect(screen, color, (rectangle.topLeft.x, SCREEN_HEIGHT - rectangle.topLeft.y, rectangle.width, rectangle.height), t)
+def drawLine(color, ls):
+    pygame.draw.line(screen, color, (ls.x1, SCREEN_HEIGHT - ls.y1), (ls.x2, SCREEN_HEIGHT - ls.y2))
 def writeText(color, text, size, x, y):
     font = pygame.font.SysFont("arial", size).render(text, True, color)
     screen.blit(font, (x, SCREEN_HEIGHT - y))
-# Algorithm Logic
-def headingDistanceToPoints(x, y, data):
-    previousHeading = 0
-    pointX, pointY = 0, 0
-    allPoints = set()
-    positionData = []
-    # Position starts at (0, 0)
-    # If heading is different from previous heading:
-    # Take distance and heading to calculate a vector that is added to current position to find the location of a wall/obstacle
-    # If heading is same as previous heading:
-    # Update position based on previous point
-    for dataPoint in data:
-        currentHeading = dataPoint[0]
-        distanceToObstacle = dataPoint[1]
-        currentlyMoving = dataPoint[2]
-        averageVelocity = dataPoint[3]
-        if currentlyMoving:
-            if currentHeading != previousHeading:
-                pointX = x + (distanceToObstacle + averageVelocity) * math.cos(math.radians(currentHeading))
-                pointY = y + (distanceToObstacle + averageVelocity) * math.sin(math.radians(currentHeading))
-                previousHeading = currentHeading
-                allPoints.add((pointX, pointY))
-            deltaDistance = distance(x, y, pointX, pointY) - distanceToObstacle
-            x += deltaDistance * math.cos(math.radians(currentHeading))
-            y += deltaDistance * math.sin(math.radians(currentHeading))
-        elif currentHeading != previousHeading:
-            pointX = x + distanceToObstacle * math.cos(math.radians(currentHeading))
-            pointY = y + distanceToObstacle * math.sin(math.radians(currentHeading))
-            allPoints.add((pointX, pointY))
-            previousHeading = currentHeading
-        positionData.append((x, y, currentHeading))
-    return allPoints, positionData
+def drawButtons(recording, simRecording):
+    TEAL = (125, 187, 195)
+    PURPLE = (138, 131, 195)
+    for i in range(len(buttons)):
+        if i < 6:
+            drawHollowRectangle(TEAL, buttons[i], 1)
+            writeText(TEAL, str(i + 1), 20, buttons[i].topLeft.x + 15, buttons[i].topLeft.y - 7)
+        elif i == 6: # Recording Button
+            drawHollowRectangle(PURPLE, buttons[i], 1)
+            if recording:
+                writeText(PURPLE, "Stop Recording", 24, buttons[i].topLeft.x + 12, buttons[i].topLeft.y - 5)
+            else:
+                writeText(PURPLE, "Start Recording", 24, buttons[i].topLeft.x + 12, buttons[i].topLeft.y - 5)
+        elif i == 7: # Load Data Button
+            drawHollowRectangle(PURPLE, buttons[i], 1)
+            writeText(PURPLE, "Load Data", 24, buttons[i].topLeft.x + 12, buttons[i].topLeft.y - 5)
+        elif i == 8:
+            drawHollowRectangle(PURPLE, buttons[i], 1)
+            if simRecording:
+                writeText(PURPLE, "Stop Simulation", 24, buttons[i].topLeft.x + 10, buttons[i].topLeft.y - 5)
+            else:
+                writeText(PURPLE, "Run Simulation", 24, buttons[i].topLeft.x + 12, buttons[i].topLeft.y - 5)
+
 
 # Pygame/Program Initialization
 pygame.init()
@@ -55,25 +47,38 @@ SCREEN_WIDTH, SCREEN_HEIGHT, SIDEBAR_WIDTH = 1200, 800, 200
 screen = pygame.display.set_mode((SCREEN_WIDTH + SIDEBAR_WIDTH, SCREEN_HEIGHT))
 clock = pygame.time.Clock()
 running = True
+buttons = []
+for i in range(6):
+    rectX = SCREEN_WIDTH + 20 + 60 * (i % 3)
+    if i > 2:
+        rectY = SCREEN_HEIGHT - 100
+    else:
+        rectY = SCREEN_HEIGHT - 40
+    buttons.append(Rectangle(rectX, rectY, 40, 40))
+for i in range(3):
+    buttons.append(Rectangle(SCREEN_WIDTH + 20, SCREEN_HEIGHT - 300 - 100 * i, SIDEBAR_WIDTH - 40, 40))
+
 # Roomba Initialization
-startingX, startingY = xPos, yPos = SCREEN_WIDTH/2, SCREEN_HEIGHT/2
+currentPosition = Point(SCREEN_WIDTH/2, SCREEN_HEIGHT/2)
+startingPosition = Point(SCREEN_WIDTH/2, SCREEN_HEIGHT/2)
 heading = math.pi/2
 roombaRadius = 20
 # Map Layout
-allExamples = [[[(400, 200), (800, 200), (800, 600), (400, 600), (400, 200)]], [[(200, 100), (1000, 100), (800, 700), (400, 700), (400, 400), (200, 400), (200, 100)]], [[(200, 200), (900, 200), (900, 600), (200, 600), (200, 200)], [(300, 300), (400, 300), (400, 350), (300, 350), (300, 300)]]]
-basicBoxExample = [[(400, 200), (800, 200), (800, 600), (400, 600), (400, 200)]]
-complicatedShapeExample = [[(200, 100), (1000, 100), (800, 700), (400, 700), (400, 400), (200, 400), (200, 100)]]
-boxObstacleExample = [[(200, 200), (900, 200), (900, 600), (200, 600), (200, 200)], [(300, 300), (400, 300), (400, 350), (300, 350), (300, 300)]]
-obstaclePositions = allExamples[0]
-# Runtime Variables
+basicBoxLayout = [coordinatesToPoints([(400, 200), (800, 200), (800, 600), (400, 600), (400, 200)])]
+complicatedShapeLayout = [coordinatesToPoints([(200, 100), (1000, 100), (800, 700), (400, 700), (400, 400), (200, 400), (200, 100)])]
+boxObstacleLayout = [coordinatesToPoints([(200, 200), (900, 200), (900, 600), (200, 600), (200, 200)]), coordinatesToPoints([(300, 300), (400, 300), (400, 350), (300, 350), (300, 300)])]
+allFloorLayouts = [basicBoxLayout, complicatedShapeLayout, boxObstacleLayout]
+floorLayout = allFloorLayouts[0]
+# Runtime
 isRecording = False
 recordedData = []
 estimatedPoints = set()
 pastPositions = []
+pastHeadings = []
 positionIndex = 0
 delay = 0
 notificationDisplayTime = 0
-displayPoints = False
+simulationRunning = False
 
 while running:
     # Handles timers
@@ -94,12 +99,12 @@ while running:
         heading -= 0.05
 
     if pygame.key.get_pressed()[pygame.K_UP]:
-        xPos += math.cos(heading)
-        yPos += math.sin(heading)
+        currentPosition.x += math.cos(heading)
+        currentPosition.y += math.sin(heading)
         isMoving = True
-        if checkCollisions(xPos, yPos, roombaRadius, obstaclePositions):
-            xPos -= math.cos(heading)
-            yPos -= math.sin(heading)
+        if checkCollisions(currentPosition, roombaRadius, floorLayout):
+            currentPosition.x -= math.cos(heading)
+            currentPosition.y -= math.sin(heading)
             isMoving = False
     else:
         isMoving = False
@@ -107,134 +112,82 @@ while running:
     # Draws background and side panel
     screen.fill((255, 255, 255))
     drawRectangle((67, 80, 88), SCREEN_WIDTH, SCREEN_HEIGHT, SIDEBAR_WIDTH, SCREEN_HEIGHT)
-    # Draws buttons for layout
-    for i in range(6):
-        rectX = SCREEN_WIDTH + 20 + 60 * (i % 3)
-        if i > 2:
-            rectY = SCREEN_HEIGHT - 100
-        else:
-            rectY = SCREEN_HEIGHT - 40
-        rectWidth = 40
-        rectHeight = 40
-        drawHollowRectangle((125, 187, 195), rectX, rectY, 40, 40, 1)
-        writeText((125, 187, 195), str(i + 1), 20, rectX + 15, rectY - 7)
-        if pygame.mouse.get_pressed()[0]:
-            mousePosition = pygame.mouse.get_pos()
-            if pointInsideRectangle(rectX, rectY, rectWidth, rectHeight, mousePosition[0], SCREEN_HEIGHT - mousePosition[1]):
-                obstaclePositions = allExamples[i]
-                xPos = SCREEN_WIDTH/2
-                yPos = SCREEN_HEIGHT/2
-                isRecording = False
-    # Draws the "recording" button
-    rectX = SCREEN_WIDTH + 20
-    rectY = SCREEN_HEIGHT - 300
-    rectWidth = SIDEBAR_WIDTH - 40
-    rectHeight = 40
-    drawHollowRectangle((138, 131, 195), rectX, rectY, rectWidth, rectHeight, 1)
-    if isRecording:
-        writeText((138, 131, 195), "Stop Recording", 24, rectX + 12, rectY - 5)
-    else:
-        writeText((138, 131, 195), "Start Recording", 24, rectX + 12, rectY - 5)
-    if pygame.mouse.get_pressed()[0] and delay == 0:
-        mousePosition = pygame.mouse.get_pos()
-        if pointInsideRectangle(rectX, rectY, rectWidth, rectHeight, mousePosition[0], SCREEN_HEIGHT - mousePosition[1]):
-            isRecording = not isRecording
-            if isRecording:
-                recordedData = []
-                startingX, startingY = xPos, yPos
-            delay = 15
-    # Draws the button to load data
-    rectX = SCREEN_WIDTH + 20
-    rectY = SCREEN_HEIGHT - 400
-    rectWidth = SIDEBAR_WIDTH - 40
-    rectHeight = 40
-    drawHollowRectangle((138, 131, 195), rectX, rectY, rectWidth, rectHeight, 1)
-    writeText((138, 131, 195), "Load Data", 24, rectX + 12, rectY - 5)
-    if pygame.mouse.get_pressed()[0] and delay == 0:
-        mousePosition = pygame.mouse.get_pos()
-        if pointInsideRectangle(rectX, rectY, rectWidth, rectHeight, mousePosition[0], SCREEN_HEIGHT - mousePosition[1]):
-            pass
-    # Draws the simulation button
-    rectX = SCREEN_WIDTH + 20
-    rectY = SCREEN_HEIGHT - 500
-    rectWidth = SIDEBAR_WIDTH - 40
-    rectHeight = 40
-    drawHollowRectangle((138, 131, 195), rectX, rectY, rectWidth, rectHeight, 1)
-    if displayPoints:
-        writeText((138, 131, 195), "Stop Simulation", 24, rectX + 10, rectY - 5)
-    else:
-        writeText((138, 131, 195), "Run Simulation", 24, rectX + 12, rectY - 5)
-    if pygame.mouse.get_pressed()[0] and delay == 0:
-        mousePosition = pygame.mouse.get_pos()
-        if pointInsideRectangle(rectX, rectY, rectWidth, rectHeight, mousePosition[0], SCREEN_HEIGHT - mousePosition[1]):
-            if len(recordedData) == 0:
-                notificationDisplayTime = 50
-            else:
-                estimatedPoints, pastPositions = headingDistanceToPoints(startingX, startingY, recordedData)
-                displayPoints = not displayPoints
-                positionIndex = 0
-                delay = 15
+    drawButtons(isRecording, simulationRunning)
 
-    # Iteratively form a line with the next closest neighbour, if the slope of the line deviates then you know there is a change in direction
-
-    # Start with random point P
-    # Pick the closest point to P and form a line, measuring the slope and add it to a set visitedPoints and array [[p1, p2, p3], [p1, p2], etc, where each subarr is a collection of points that form a line]
-    # Pick the next closest point, if the slope is within bounds K then add the point to the list and set
-    # If the slope deviation is larger than bounds K, then create a new starting point P'
-    # Repeat to pick the closest points to P' that are not in the set
+    if pygame.mouse.get_pressed()[0] and delay == 0:
+        mousePosition = Point(pygame.mouse.get_pos()[0], SCREEN_HEIGHT - pygame.mouse.get_pos()[1])
+        for i in range(len(buttons)):
+            if buttons[i].insideRect(mousePosition):
+                if i < 6:
+                    floorLayout = allFloorLayouts[i]
+                    currentPosition = Point(SCREEN_WIDTH/2, SCREEN_HEIGHT/2)
+                    isRecording = False
+                elif i == 6:
+                    isRecording = not isRecording
+                    if isRecording:
+                        recordedData = []
+                        startingPosition = currentPosition
+                    delay = 15
+                elif i == 7:
+                    pass
+                elif i == 8:
+                    if len(recordedData) == 0:
+                        notificationDisplayTime = 50
+                    else:
+                        estimatedPoints, pastPositions, pastHeadings = headingDistanceToPoints(startingPosition, recordedData)
+                        simulationRunning = not simulationRunning
+                        positionIndex = 0
+                        delay = 15
 
 
     if notificationDisplayTime > 0:
-        writeText((255, 0, 0), "No data available", 20, rectX, 50)
-    if displayPoints:
+        writeText((255, 0, 0), "No data available", 20, SCREEN_WIDTH + 20, 50)
+    if simulationRunning:
         for eachPoint in estimatedPoints:
-            drawCircle((100, 255, 100), eachPoint[0], eachPoint[1], 2)
+            drawCircle((100, 255, 100), eachPoint, 2)
         if positionIndex < len(pastPositions):
-            retraceX = pastPositions[positionIndex][0]
-            retraceY = pastPositions[positionIndex][1]
-            retraceHeading = pastPositions[positionIndex][2]
-            drawHollowCircle((0, 0, 0), retraceX, retraceY, 10, 1)
-            drawLine((100, 100, 255), retraceX, retraceY, retraceX + 30 * math.cos(math.radians(retraceHeading)), retraceY + 30 * math.sin(math.radians(retraceHeading)))
+            retraceHeading = pastHeadings[positionIndex]
+            drawHollowCircle((0, 0, 0), pastPositions[positionIndex], 10, 1)
+            drawLine((100, 100, 255), LineSegment(pastPositions[positionIndex], Point(pastPositions[positionIndex].x + 30 * math.cos(math.radians(retraceHeading)), pastPositions[positionIndex].y + 30 * math.sin(math.radians(retraceHeading)))))
             positionIndex += 1
         else:
-            displayPoints = False
+            simulationRunning = False
     else:
-        drawCircle((0, 0, 0), xPos, yPos, roombaRadius)
-        drawLine((100, 100, 255), xPos, yPos, xPos + 60 * math.cos(heading), yPos + 60 * math.sin(heading))
+        drawCircle((0, 0, 0), currentPosition, roombaRadius)
+        drawLine((100, 100, 255), LineSegment(currentPosition, Point(currentPosition.x + 60 * math.cos(heading), currentPosition.y + 60 * math.sin(heading))))
 
 
     # -------------------------------------------------- Calculates line based on roomba heading -------------------------------------------------- #
     if math.sin(heading) == 1:  # Points straight down
-        roombaToBorderSegment = [xPos, yPos, xPos, SCREEN_HEIGHT]
+        roombaToBorderSegment = LineSegment(currentPosition, Point(currentPosition.x, SCREEN_HEIGHT))
     elif math.sin(heading) == -1:  # Points straight up
-        roombaToBorderSegment = [xPos, yPos, xPos, 0]
+        roombaToBorderSegment = LineSegment(currentPosition, Point(currentPosition.x, 0))
     else:
         slope = math.tan(heading)
         if math.cos(heading) < 0:
-            roombaToBorderSegment = [xPos, yPos, 0, yPos - slope * xPos]
+            roombaToBorderSegment = LineSegment(currentPosition, Point(0, currentPosition.y - slope * currentPosition.x))
         else:
-            roombaToBorderSegment = [xPos, yPos, SCREEN_WIDTH, yPos + slope * (SCREEN_WIDTH - xPos)]
-#    drawLine((100, 100, 255), xPos, yPos, roombaToBorderSegment[2], roombaToBorderSegment[3])
+            roombaToBorderSegment = LineSegment(currentPosition, Point(SCREEN_WIDTH, currentPosition.y + slope * (SCREEN_WIDTH - currentPosition.x)))
 
     intersections = []
-    for eachShape in obstaclePositions:
+    for eachShape in floorLayout:
         for i in range(len(eachShape) - 1):
-            drawLine((0, 0, 0), eachShape[i][0], eachShape[i][1], eachShape[i+1][0], eachShape[i+1][1])
-            obstacleLineSegment = [eachShape[i][0], eachShape[i][1], eachShape[i+1][0], eachShape[i+1][1]]
-            intersectionPoint = calculateSegmentIntersection(roombaToBorderSegment, obstacleLineSegment)
+            connectingLineSegment = LineSegment(eachShape[i], eachShape[i + 1])
+            drawLine((0, 0, 0), connectingLineSegment)
+            intersectionPoint = calculateSegmentIntersection(roombaToBorderSegment, connectingLineSegment)
             if intersectionPoint != -1:
                 intersections.append(intersectionPoint)
 
-    closestIntersection = []
+    closestIntersection = -1
     if len(intersections) >= 1:
         closestIntersection = intersections[0]
         for intersection in intersections:
-            if distance(xPos, yPos, intersection[0], intersection[1]) < distance(xPos, yPos, closestIntersection[0], closestIntersection[1]):
+            if LineSegment(currentPosition, intersection).length() < LineSegment(currentPosition, closestIntersection).length():
                 closestIntersection = intersection
 
-    if len(closestIntersection) > 0:
+    if closestIntersection != -1:
         if isRecording:
-            recordedData.append((round(math.degrees(heading) % 360, 4), round(distance(xPos, yPos, closestIntersection[0], closestIntersection[1]), 4), isMoving, 1))
+            recordedData.append((round(math.degrees(heading) % 360, 4), round(LineSegment(currentPosition, closestIntersection).length(), 4), isMoving, 1))
 
     pygame.display.update()
     clock.tick(60)  # limits FPS to 60

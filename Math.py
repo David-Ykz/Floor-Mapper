@@ -24,7 +24,7 @@ class LineSegment:
         return self.y1 - self.slope() * self.x1
 
     def isVerticalLine(self):
-        return self.y1 == self.y2
+        return self.x1 == self.x2
 
     def maxX(self):
         return max(self.x1, self.x2)
@@ -38,6 +38,15 @@ class LineSegment:
     def minY(self):
         return min(self.y1, self.y2)
 
+class Rectangle:
+    def __init__(self, x, y, w, h):
+        self.topLeft = Point(x, y)
+        self.width = w
+        self.height = h
+
+    def insideRect(self, p):
+        return (self.topLeft.x + self.width >= p.x >= self.topLeft.x) and (self.topLeft.y >= p.y >= self.topLeft.y - self.height)
+
 # Basic Helper Functions
 def quadraticFormula(a, b, c):
     discriminant = b ** 2 - 4 * a * c
@@ -47,6 +56,11 @@ def quadraticFormula(a, b, c):
         return [-b / (2 * a)]
     else:
         return [(-b + math.sqrt(discriminant)) / (2 * a), (-b - math.sqrt(discriminant)) / (2 * a)]
+def coordinatesToPoints(coordinates):
+    points = []
+    for eachCoordinate in coordinates:
+        points.append(Point(eachCoordinate[0], eachCoordinate[1]))
+    return points
 
 # Intersection/Collision Logic
 def calculateLineIntersection(m1, b1, m2, b2):
@@ -80,19 +94,19 @@ def calculateSegmentIntersection(ls1, ls2):
     else:
         return -1
 
-def circleLineSegmentIntersection(circleX, circleY, radius, ls):
+def circleLineSegmentIntersection(circleCenter, radius, ls):
     if ls.isVerticalLine():  # Vertical Line
-        if abs(circleX - ls.x1) < radius:
-            yDistance = math.sqrt(radius ** 2 - (circleX - ls.x1) ** 2)
-            if ls.maxY() >= circleY + yDistance >= ls.minY():
+        if abs(circleCenter.x - ls.x1) < radius:
+            yDistance = math.sqrt(radius ** 2 - (circleCenter.x - ls.x1) ** 2)
+            if ls.maxY() >= circleCenter.y + yDistance >= ls.minY():
                 return True
-            elif ls.maxY() >= circleY - yDistance >= ls.minY():
+            elif ls.maxY() >= circleCenter.y - yDistance >= ls.minY():
                 return True
         return False
 
     a = 1 + ls.slope() ** 2
-    b = -2 * circleX + 2 * ls.slope() * (ls.intercept() - circleY)
-    c = circleX ** 2 + (ls.intercept() - circleY) ** 2 - radius ** 2
+    b = -2 * circleCenter.x + 2 * ls.slope() * (ls.intercept() - circleCenter.y)
+    c = circleCenter.x ** 2 + (ls.intercept() - circleCenter.y) ** 2 - radius ** 2
     intersectionPointsX = quadraticFormula(a, b, c)
     if len(intersectionPointsX) == 0:
         return False
@@ -101,13 +115,11 @@ def circleLineSegmentIntersection(circleX, circleY, radius, ls):
             return True
     return False
 
-def pointInsideRectangle(rectPoint, w, h, p1):
-    return (rectPoint.x + w >= p1.x >= rectPoint.x) and (rectPoint.y >= p1.y >= rectPoint.y - h)
 
-def checkCollisions(circleX, circleY, radius, allObstacles):
+def checkCollisions(circleCenter, radius, allObstacles):
     anyCollision = False
     for eachObstacle in allObstacles:
         for i in range(len(eachObstacle) - 1):
-            if circleLineSegmentIntersection(circleX, circleY, radius, LineSegment(eachObstacle[i], eachObstacle[i + 1])):
+            if circleLineSegmentIntersection(circleCenter, radius, LineSegment(eachObstacle[i], eachObstacle[i + 1])):
                 anyCollision = True
     return anyCollision
