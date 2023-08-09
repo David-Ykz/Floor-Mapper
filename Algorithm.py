@@ -23,6 +23,6 @@ def headingDistanceToPoints(p, data):
             obstaclePoint = Point(p.x + distanceToObstacle * math.cos(math.radians(currentHeading)), p.y + distanceToObstacle * math.sin(math.radians(currentHeading)))
             allPoints.add(obstaclePoint)
             previousHeading = currentHeading
-        positionData.append(p)
+        positionData.append(Point(p.x, p.y))
         headingData.append(currentHeading)
     return allPoints, positionData, headingData

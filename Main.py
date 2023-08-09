@@ -126,7 +126,7 @@ while running:
                     isRecording = not isRecording
                     if isRecording:
                         recordedData = []
-                        startingPosition = currentPosition
+                        startingPosition = Point(currentPosition.x, currentPosition.y)
                     delay = 15
                 elif i == 7:
                     pass
@@ -147,14 +147,14 @@ while running:
             drawCircle((100, 255, 100), eachPoint, 2)
         if positionIndex < len(pastPositions):
             retraceHeading = pastHeadings[positionIndex]
-            drawHollowCircle((0, 0, 0), pastPositions[positionIndex], 10, 1)
-            drawLine((100, 100, 255), LineSegment(pastPositions[positionIndex], Point(pastPositions[positionIndex].x + 30 * math.cos(math.radians(retraceHeading)), pastPositions[positionIndex].y + 30 * math.sin(math.radians(retraceHeading)))))
+            drawHollowCircle((0, 0, 0), pastPositions[positionIndex], roombaRadius, 1)
+            drawLine((100, 100, 255), LineSegment(pastPositions[positionIndex], Point(pastPositions[positionIndex].x + 40 * math.cos(math.radians(retraceHeading)), pastPositions[positionIndex].y + 40 * math.sin(math.radians(retraceHeading)))))
             positionIndex += 1
         else:
             simulationRunning = False
     else:
         drawCircle((0, 0, 0), currentPosition, roombaRadius)
-        drawLine((100, 100, 255), LineSegment(currentPosition, Point(currentPosition.x + 60 * math.cos(heading), currentPosition.y + 60 * math.sin(heading))))
+        drawLine((100, 100, 255), LineSegment(currentPosition, Point(currentPosition.x + 40 * math.cos(heading), currentPosition.y + 40 * math.sin(heading))))
 
 
     # -------------------------------------------------- Calculates line based on roomba heading -------------------------------------------------- #
