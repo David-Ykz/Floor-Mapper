@@ -1,3 +1,5 @@
+import sys
+
 import pygame
 from Math import *
 from Algorithm import *
@@ -58,6 +60,11 @@ for i in range(6):
 for i in range(3):
     buttons.append(Rectangle(SCREEN_WIDTH + 20, SCREEN_HEIGHT - 300 - 100 * i, SIDEBAR_WIDTH - 40, 40))
 
+listOfColors = []
+for i in range(10000):
+    listOfColors.append((10 * random.randint(0, 25), 10 * random.randint(0, 25), 10 * random.randint(0, 25)))
+
+
 # Roomba Initialization
 currentPosition = Point(SCREEN_WIDTH/2, SCREEN_HEIGHT/2)
 startingPosition = Point(SCREEN_WIDTH/2, SCREEN_HEIGHT/2)
@@ -75,8 +82,10 @@ recordedData = []
 estimatedPoints = set()
 pastPositions = []
 pastHeadings = []
+groupedPoints = dict()
 positionIndex = 0
 delay = 0
+startingPoint = Point(0, 0)
 notificationDisplayTime = 0
 simulationRunning = False
 
@@ -135,6 +144,7 @@ while running:
                         notificationDisplayTime = 50
                     else:
                         estimatedPoints, pastPositions, pastHeadings = headingDistanceToPoints(startingPosition, recordedData)
+                        startingPoint, groupedPoints = fitLineToData(list(estimatedPoints))
                         simulationRunning = not simulationRunning
                         positionIndex = 0
                         delay = 15
@@ -143,8 +153,15 @@ while running:
     if notificationDisplayTime > 0:
         writeText((255, 0, 0), "No data available", 20, SCREEN_WIDTH + 20, 50)
     if simulationRunning:
-        for eachPoint in estimatedPoints:
-            drawCircle((100, 255, 100), eachPoint, 2)
+        colorIndex = 0
+        for eachCollectionPoints in groupedPoints:
+            for eachPoint in groupedPoints[eachCollectionPoints]:
+                drawCircle(listOfColors[colorIndex], eachPoint, 2)
+            colorIndex += 1
+
+        drawCircle((255, 0, 0), startingPoint, 10)
+#        for eachPoint in estimatedPoints:
+#            drawCircle((100, 255, 100), eachPoint, 2)
         if positionIndex < len(pastPositions):
             retraceHeading = pastHeadings[positionIndex]
             drawHollowCircle((0, 0, 0), pastPositions[positionIndex], roombaRadius, 1)

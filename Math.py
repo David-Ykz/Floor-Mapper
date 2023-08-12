@@ -1,4 +1,5 @@
 import math
+import sys
 
 
 class Point:
@@ -18,6 +19,8 @@ class LineSegment:
         return math.sqrt((self.x1 - self.x2) ** 2 + (self.y1 - self.y2) ** 2)
 
     def slope(self):
+        if self.isVerticalLine():
+            return sys.maxsize
         return (self.y1 - self.y2) / (self.x1 - self.x2)
 
     def intercept(self):
