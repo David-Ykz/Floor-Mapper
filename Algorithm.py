@@ -75,10 +75,23 @@ def fitLineToData(points):
 
 
 def checkNextClosestPoint(p, sortedPoints, collection, index):
-    EPSILON = 0.5
+    EPSILON = 0.1
+    VERTICAL_LINE_THRESHOLD = 100
     closestPoint = sortedPoints[index]
     if closestPoint not in collection:
-        if abs(LineSegment(p, closestPoint).slope() - averageSlope(p, collection[p])) < EPSILON:
+        if abs(LineSegment(p, closestPoint).slope()) > VERTICAL_LINE_THRESHOLD:
+            if abs(LineSegment(p, closestPoint).verticalSlope()) < EPSILON and averageSlope(p, collection[p]) > VERTICAL_LINE_THRESHOLD:
+                collection[p].append(closestPoint)
+                sortedPoints.remove(closestPoint)
+                if index < len(sortedPoints) - 1:
+                    checkNextClosestPoint(p, sortedPoints, collection, index)
+            elif index < len(sortedPoints) - 2:
+                sortedPoints.remove(closestPoint)
+                sortClosestPoints(closestPoint, sortedPoints, 0, len(sortedPoints) - 1)
+                collection.update({closestPoint: [closestPoint, sortedPoints[0]]})
+                sortedPoints.remove(sortedPoints[0])
+                checkNextClosestPoint(closestPoint, sortedPoints, collection, 0)
+        elif abs(LineSegment(p, closestPoint).slope() - averageSlope(p, collection[p])) < EPSILON:
             collection[p].append(closestPoint)
             sortedPoints.remove(closestPoint)
             if index < len(sortedPoints) - 1:

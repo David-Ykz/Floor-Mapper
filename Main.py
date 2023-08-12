@@ -131,6 +131,7 @@ while running:
                     floorLayout = allFloorLayouts[i]
                     currentPosition = Point(SCREEN_WIDTH/2, SCREEN_HEIGHT/2)
                     isRecording = False
+                    simulationRunning = False
                 elif i == 6:
                     isRecording = not isRecording
                     if isRecording:

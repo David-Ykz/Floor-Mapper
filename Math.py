@@ -23,6 +23,9 @@ class LineSegment:
             return sys.maxsize
         return (self.y1 - self.y2) / (self.x1 - self.x2)
 
+    def verticalSlope(self):
+        return (self.x1 - self.x2) / (self.y1 - self.y2)
+
     def intercept(self):
         return self.y1 - self.slope() * self.x1
 
