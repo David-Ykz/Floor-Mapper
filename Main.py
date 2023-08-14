@@ -3,6 +3,7 @@ import time
 
 import pygame
 from Math import *
+import random
 from Algorithm import *
 
 # Pygame Functions
@@ -89,6 +90,7 @@ delay = 0
 startingPoint = Point(0, 0)
 notificationDisplayTime = 0
 simulationRunning = False
+currentFloorLayout = []
 
 while running:
     # Handles timers
@@ -135,20 +137,23 @@ while running:
                     simulationRunning = False
                 elif i == 6:
                     isRecording = not isRecording
+                    simulationRunning = False
                     if isRecording:
                         recordedData = []
                         startingPosition = Point(currentPosition.x, currentPosition.y)
+                        currentFloorLayout = floorLayout.copy()
                     delay = 15
                 elif i == 7:
                     pass
-                elif i == 8:
+                elif i == 8 and not isRecording:
                     if len(recordedData) == 0:
                         notificationDisplayTime = 50
                     else:
                         estimatedPoints, pastPositions, pastHeadings = headingDistanceToPoints(startingPosition, recordedData)
-                        startingPoint, groupedPoints = fitLineToData(list(estimatedPoints))
+                        groupedPoints = fitLineToData(list(estimatedPoints))
                         simulationRunning = not simulationRunning
                         positionIndex = 0
+                        floorLayout = currentFloorLayout.copy()
                         delay = 15
 
 
@@ -161,9 +166,6 @@ while running:
                 drawCircle(listOfColors[colorIndex], eachPoint, 2)
             colorIndex += 1
 
-        drawCircle((255, 0, 0), startingPoint, 10)
-#        for eachPoint in estimatedPoints:
-#            drawCircle((100, 255, 100), eachPoint, 2)
         if positionIndex < len(pastPositions):
             retraceHeading = pastHeadings[positionIndex]
             drawHollowCircle((0, 0, 0), pastPositions[positionIndex], roombaRadius, 1)

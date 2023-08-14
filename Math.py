@@ -24,7 +24,6 @@ class LineSegment:
         return (self.y1 - self.y2) / (self.x1 - self.x2)
 
     def verticalSlope(self):
-        print(self.x1, self.y1, self.x2, self.y2)
         return (self.x1 - self.x2) / (self.y1 - self.y2)
 
     def intercept(self):
