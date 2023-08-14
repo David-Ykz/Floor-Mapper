@@ -23,20 +23,21 @@ def writeText(color, text, size, x, y):
 def drawButtons(recording, simRecording):
     TEAL = (125, 187, 195)
     PURPLE = (138, 131, 195)
+    writeText(TEAL, "Sample Floor Layouts", 20, SCREEN_WIDTH + 20, SCREEN_HEIGHT - 10)
     for i in range(len(buttons)):
-        if i < 6:
+        if i < 3:
             drawHollowRectangle(TEAL, buttons[i], 1)
-            writeText(TEAL, str(i + 1), 20, buttons[i].topLeft.x + 15, buttons[i].topLeft.y - 7)
-        elif i == 6: # Recording Button
+            writeText(TEAL, "Example " + str(i + 1), 20, buttons[i].topLeft.x + 40, buttons[i].topLeft.y - 7)
+        elif i == 3: # Recording Button
             drawHollowRectangle(PURPLE, buttons[i], 1)
             if recording:
                 writeText(PURPLE, "Stop Recording", 24, buttons[i].topLeft.x + 12, buttons[i].topLeft.y - 5)
             else:
                 writeText(PURPLE, "Start Recording", 24, buttons[i].topLeft.x + 12, buttons[i].topLeft.y - 5)
-        elif i == 7: # Load Data Button
+        elif i == 4: # Load Data Button
             drawHollowRectangle(PURPLE, buttons[i], 1)
             writeText(PURPLE, "Load Data", 24, buttons[i].topLeft.x + 12, buttons[i].topLeft.y - 5)
-        elif i == 8:
+        elif i == 5:
             drawHollowRectangle(PURPLE, buttons[i], 1)
             if simRecording:
                 writeText(PURPLE, "Stop Simulation", 24, buttons[i].topLeft.x + 10, buttons[i].topLeft.y - 5)
@@ -52,15 +53,12 @@ screen = pygame.display.set_mode((SCREEN_WIDTH + SIDEBAR_WIDTH, SCREEN_HEIGHT))
 clock = pygame.time.Clock()
 running = True
 buttons = []
+
 for i in range(6):
-    rectX = SCREEN_WIDTH + 20 + 60 * (i % 3)
-    if i > 2:
-        rectY = SCREEN_HEIGHT - 100
+    if i < 3:
+        buttons.append(Rectangle(SCREEN_WIDTH + 20, SCREEN_HEIGHT - 50 - 50 * i, SIDEBAR_WIDTH - 40, 40))
     else:
-        rectY = SCREEN_HEIGHT - 40
-    buttons.append(Rectangle(rectX, rectY, 40, 40))
-for i in range(3):
-    buttons.append(Rectangle(SCREEN_WIDTH + 20, SCREEN_HEIGHT - 300 - 100 * i, SIDEBAR_WIDTH - 40, 40))
+        buttons.append(Rectangle(SCREEN_WIDTH + 20, SCREEN_HEIGHT - 300 - 100 * i, SIDEBAR_WIDTH - 40, 40))
 
 listOfColors = []
 for i in range(10000):
@@ -74,6 +72,7 @@ heading = math.pi/2
 roombaRadius = 20
 # Map Layout
 basicBoxLayout = [coordinatesToPoints([(400, 200), (800, 200), (800, 600), (400, 600), (400, 200)])]
+basicObstacleLayout = [coordinatesToPoints([(100, 100), (400, 100), (400, 300), (100, 700), (1000, 700), (1000, 300)]), coordinatesToPoints([(700, 600), (900, 600), (700, 500), (900, 500)])]
 complicatedShapeLayout = [coordinatesToPoints([(200, 100), (1000, 100), (800, 700), (400, 700), (400, 400), (200, 400), (200, 100)])]
 boxObstacleLayout = [coordinatesToPoints([(200, 200), (900, 200), (900, 600), (200, 600), (200, 200)]), coordinatesToPoints([(300, 300), (400, 300), (400, 350), (300, 350), (300, 300)])]
 allFloorLayouts = [basicBoxLayout, complicatedShapeLayout, boxObstacleLayout]
@@ -130,12 +129,12 @@ while running:
         mousePosition = Point(pygame.mouse.get_pos()[0], SCREEN_HEIGHT - pygame.mouse.get_pos()[1])
         for i in range(len(buttons)):
             if buttons[i].insideRect(mousePosition):
-                if i < 6:
+                if i < 3:
                     floorLayout = allFloorLayouts[i]
                     currentPosition = Point(SCREEN_WIDTH/2, SCREEN_HEIGHT/2)
                     isRecording = False
                     simulationRunning = False
-                elif i == 6:
+                elif i == 3:
                     isRecording = not isRecording
                     simulationRunning = False
                     if isRecording:
@@ -143,9 +142,9 @@ while running:
                         startingPosition = Point(currentPosition.x, currentPosition.y)
                         currentFloorLayout = floorLayout.copy()
                     delay = 15
-                elif i == 7:
+                elif i == 4:
                     pass
-                elif i == 8 and not isRecording:
+                elif i == 5 and not isRecording:
                     if len(recordedData) == 0:
                         notificationDisplayTime = 50
                     else:
