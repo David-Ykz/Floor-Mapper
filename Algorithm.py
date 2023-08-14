@@ -50,6 +50,7 @@ def sortClosestPoints(p, arr, low, high): # Quicksort
         sortClosestPoints(p, arr, partitionIndex + 1, high)
 
 def fitLineToData(points):
+    print(len(points))
     # Input data is a set of points (assume 1 shape), WILL NEED TO CLUSTER BEFORE USING
     # Returns a list of line segments
     # Pick point P closest to (0, 0)
@@ -58,29 +59,43 @@ def fitLineToData(points):
     # If PQ is within bounds of slope P, add Q to set P
     # If not, set Q = P, and continue the algorithm
 
-    closestPoint = points[0]
-    for eachPoint in points:
-        if LineSegment(eachPoint, Point(0, 0)).length() < LineSegment(closestPoint, Point(0, 0)).length():
-            closestPoint = eachPoint
+    closestPoint = closestPointToP(Point(0, 0), points)
 
-    sortedPoints = points.copy()
-    sortedPoints.remove(closestPoint)
-    sortClosestPoints(closestPoint, sortedPoints, 0, len(sortedPoints) - 1)
+    copiedPoints = points.copy()
+    copiedPoints.remove(closestPoint)
+    nextClosestPoint = closestPointToP(closestPoint, copiedPoints)
+    copiedPoints.remove(nextClosestPoint)
     pointsInLines = dict()
-    pointsInLines.update({closestPoint:[closestPoint, sortedPoints[0]]})
-    sortedPoints.remove(sortedPoints[0])
-    checkNextClosestPoint(closestPoint, sortedPoints, pointsInLines, 0)
-
+    pointsInLines.update({closestPoint:[closestPoint, nextClosestPoint]})
+    findClosestPoint(nextClosestPoint, copiedPoints, pointsInLines, closestPoint)
     return closestPoint, pointsInLines
 
+def absoluteDifference(a, b):
+    if a > b:
+        return a - b
+    else:
+        return b - a
+
+def absoluteRatio(a, b):
+    a = abs(a)
+    b = abs(b)
+    if a == 0:
+        return b
+    elif b == 0:
+        return a
+    elif a > b:
+        return a/b
+    else:
+        return b/a
 
 def checkNextClosestPoint(p, sortedPoints, collection, index):
     EPSILON = 0.1
-    VERTICAL_LINE_THRESHOLD = 100
+    VERTICAL_LINE_THRESHOLD = 10
     closestPoint = sortedPoints[index]
     if closestPoint not in collection:
-        if abs(LineSegment(p, closestPoint).slope()) > VERTICAL_LINE_THRESHOLD:
-            if abs(LineSegment(p, closestPoint).verticalSlope()) < EPSILON and averageSlope(p, collection[p]) > VERTICAL_LINE_THRESHOLD:
+        lineToPoint = LineSegment(p, closestPoint)
+        if abs(lineToPoint.slope()) > VERTICAL_LINE_THRESHOLD:
+            if abs(lineToPoint.verticalSlope()) < VERTICAL_LINE_THRESHOLD < abs(averageSlope(p, collection[p])):
                 collection[p].append(closestPoint)
                 sortedPoints.remove(closestPoint)
                 if index < len(sortedPoints) - 1:
@@ -90,8 +105,10 @@ def checkNextClosestPoint(p, sortedPoints, collection, index):
                 sortClosestPoints(closestPoint, sortedPoints, 0, len(sortedPoints) - 1)
                 collection.update({closestPoint: [closestPoint, sortedPoints[0]]})
                 sortedPoints.remove(sortedPoints[0])
+                print("Vertical Line, did not meet threshold")
+                print(lineToPoint.verticalSlope(), averageSlope(p, collection[p]))
                 checkNextClosestPoint(closestPoint, sortedPoints, collection, 0)
-        elif abs(LineSegment(p, closestPoint).slope() - averageSlope(p, collection[p])) < EPSILON:
+        elif absoluteDifference(lineToPoint.slope(), averageSlope(p, collection[p])) < EPSILON:
             collection[p].append(closestPoint)
             sortedPoints.remove(closestPoint)
             if index < len(sortedPoints) - 1:
@@ -101,8 +118,11 @@ def checkNextClosestPoint(p, sortedPoints, collection, index):
             sortClosestPoints(closestPoint, sortedPoints, 0, len(sortedPoints) - 1)
             collection.update({closestPoint:[closestPoint, sortedPoints[0]]})
             sortedPoints.remove(sortedPoints[0])
+            print("Line, did not meet threshold")
+            print(lineToPoint.slope(), averageSlope(p, collection[p]))
             checkNextClosestPoint(closestPoint, sortedPoints, collection, 0)
     elif index < len(sortedPoints) - 1: # May not need logic for this if removing from sortedPoints list
+        print("not in collection")
         checkNextClosestPoint(p, sortedPoints, collection, index + 1)
 
 def averageSlope(p, arr):
@@ -112,10 +132,59 @@ def averageSlope(p, arr):
             slopes += LineSegment(p, q).slope()
     return slopes/(len(arr) - 1)
 
+def findClosestPoint(p, points, collection, index):
+    EPSILON = 0.1
+    VERTICAL_LINE_THRESHOLD = 10
+    closestPoint = closestPointToP(p, points)
+    points.remove(closestPoint)
+    lineToPoint = LineSegment(p, closestPoint)
+    if abs(lineToPoint.slope()) > VERTICAL_LINE_THRESHOLD:
+        print(len(points), lineToPoint.slope())
+
+        if abs(lineToPoint.verticalSlope()) < VERTICAL_LINE_THRESHOLD < abs(averageSlope(p, collection[index])):
+            collection[index].append(closestPoint)
+            if len(points) > 1:
+                findClosestPoint(closestPoint, points, collection, index)
+        elif len(points) > 2:
+            nextClosestPoint = closestPointToP(closestPoint, points)
+            collection.update({closestPoint: [closestPoint, nextClosestPoint]})
+            points.remove(nextClosestPoint)
+            findClosestPoint(nextClosestPoint, points, collection, closestPoint)
+    elif absoluteDifference(lineToPoint.slope(), averageSlope(p, collection[index])) < EPSILON:
+        collection[index].append(closestPoint)
+        if len(points) > 1:
+            findClosestPoint(closestPoint, points, collection, index)
+    elif len(points) > 2:
+        nextClosestPoint = closestPointToP(closestPoint, points)
+        collection.update({closestPoint: [closestPoint, nextClosestPoint]})
+        points.remove(nextClosestPoint)
+        findClosestPoint(nextClosestPoint, points, collection, closestPoint)
 
 
 
 
+#    VERTICAL_LINE_THRESHOLD = 100
+#    THRESHOLD = 10
+#    EPSILON = 1
+#    closestPoint = closestPointToP(p, points)
+#    lineToClosestPoint = LineSegment(p, closestPoint)
+#    points.remove(closestPoint)
+
+ #   if absoluteRatio(lineToClosestPoint.slope(), averageSlope(p, collection[index])) < THRESHOLD:
+ #       collection[index].append(closestPoint)
+ #       findClosestPoint(closestPoint, points, collection, index)
+ #   else:
+ #       nextClosestPoint = closestPointToP(closestPoint, points)
+ #       collection.update({closestPoint:[closestPoint, nextClosestPoint]})
+ #       findClosestPoint(nextClosestPoint, points, collection, closestPoint)
 
 
+
+
+def closestPointToP(p, points):
+    closestPoint = points[0]
+    for eachPoint in points:
+        if LineSegment(p, eachPoint).length() < LineSegment(p, closestPoint).length():
+            closestPoint = eachPoint
+    return closestPoint
 
