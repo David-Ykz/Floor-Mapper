@@ -24,6 +24,26 @@ def headingDistanceToPoints(p, data):
         headingData.append(currentHeading)
     return allPoints, positionData, headingData
 
+def triangulation(beaconCoordinates, data):
+    positionData = []
+    b1 = beaconCoordinates[0]
+    b2 = beaconCoordinates[1]
+    b3 = beaconCoordinates[2]
+    for eachPoint in data:
+        m = - LineSegment(b1, b2).verticalSlope()
+        k = b1.x ** 2 + b1.y ** 2 - b2.x ** 2 - b2.y ** 2 + eachPoint[1] ** 2 - eachPoint[0] ** 2
+        intercept = -k / (2 * (b2.y - b1.y))
+        n = intercept - b1.y
+        a = 1 + m ** 2
+        b = -2 * b1.x + 2 * m * n
+        c = b1.x ** 2 + n ** 2 - eachPoint[0] ** 2
+        intercepts = quadraticFormula(a, b, c)
+        for eachIntercept in intercepts:
+            y = m * eachIntercept + intercept
+            if (eachIntercept - b3.x) ** 2 + (y - b3.y) ** 2 == eachPoint[2] ** 2:
+                positionData.append(Point(eachIntercept, y))
+    return positionData
+
 def partition(p, arr, low, high):
     pivot = arr[high]
     index = low - 1
@@ -104,3 +124,12 @@ def closestPointToP(p, points):
         points.remove(eachPoint)
     return closestPoint
 
+
+b1 = Point(2, 13)
+b2 = Point(13, 11)
+b3 = Point(10, 0)
+
+distances = [[10, 5, 7]]
+inter = triangulation([b1, b2, b3], distances)
+
+print(inter[0].x, inter[0].y)
