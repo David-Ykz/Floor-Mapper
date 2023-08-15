@@ -20,29 +20,44 @@ def drawLine(color, ls):
 def writeText(color, text, size, x, y):
     font = pygame.font.SysFont("arial", size).render(text, True, color)
     screen.blit(font, (x, SCREEN_HEIGHT - y))
-def drawButtons(recording, simRecording):
+def drawButtons(recording, simRecording, numBeacons):
     TEAL = (125, 187, 195)
     PURPLE = (138, 131, 195)
+    ORANGE = (247, 179, 43)
     writeText(TEAL, "Sample Floor Layouts", 20, SCREEN_WIDTH + 20, SCREEN_HEIGHT - 10)
     for i in range(len(buttons)):
         if i < 3:
             drawHollowRectangle(TEAL, buttons[i], 1)
             writeText(TEAL, "Example " + str(i + 1), 20, buttons[i].topLeft.x + 40, buttons[i].topLeft.y - 7)
-        elif i == 3: # Recording Button
+        elif i == 3:
+            drawHollowRectangle(PURPLE, buttons[i], 1)
+            writeText(PURPLE, "Place Beacon (" + str(numBeacons) + "/3)", 20, buttons[i].topLeft.x + 12, buttons[i].topLeft.y - 8)
+        elif i == 4:
+            drawHollowRectangle(PURPLE, buttons[i], 1)
+            writeText(PURPLE, "Clear Beacons", 24, buttons[i].topLeft.x + 12, buttons[i].topLeft.y - 5)
+        elif i == 5: # Recording Button
             drawHollowRectangle(PURPLE, buttons[i], 1)
             if recording:
                 writeText(PURPLE, "Stop Recording", 24, buttons[i].topLeft.x + 12, buttons[i].topLeft.y - 5)
             else:
                 writeText(PURPLE, "Start Recording", 24, buttons[i].topLeft.x + 12, buttons[i].topLeft.y - 5)
-        elif i == 4: # Load Data Button
+        elif i == 6: # Load Data Button
             drawHollowRectangle(PURPLE, buttons[i], 1)
             writeText(PURPLE, "Load Data", 24, buttons[i].topLeft.x + 12, buttons[i].topLeft.y - 5)
-        elif i == 5:
-            drawHollowRectangle(PURPLE, buttons[i], 1)
+        elif i == 7:
+            drawHollowRectangle(ORANGE, buttons[i], 1)
             if simRecording:
-                writeText(PURPLE, "Stop Simulation", 24, buttons[i].topLeft.x + 10, buttons[i].topLeft.y - 5)
+                writeText(ORANGE, "Stop", 22, buttons[i].topLeft.x + 42, buttons[i].topLeft.y - 5)
             else:
-                writeText(PURPLE, "Run Simulation", 24, buttons[i].topLeft.x + 12, buttons[i].topLeft.y - 5)
+                writeText(ORANGE, "Distance-Heading", 22, buttons[i].topLeft.x + 10, buttons[i].topLeft.y - 5)
+            writeText(ORANGE, "Simulation", 22, buttons[i].topLeft.x + 38, buttons[i].topLeft.y - 35)
+        elif i == 8:
+            drawHollowRectangle(ORANGE, buttons[i], 1)
+            if simRecording:
+                writeText(ORANGE, "Stop", 22, buttons[i].topLeft.x + 42, buttons[i].topLeft.y - 5)
+            else:
+                writeText(ORANGE, "Triangulation", 22, buttons[i].topLeft.x + 28, buttons[i].topLeft.y - 5)
+            writeText(ORANGE, "Simulation", 22, buttons[i].topLeft.x + 38, buttons[i].topLeft.y - 35)
 
 
 # Pygame/Program Initialization
@@ -54,11 +69,14 @@ clock = pygame.time.Clock()
 running = True
 buttons = []
 
-for i in range(6):
+for i in range(9):
     if i < 3:
         buttons.append(Rectangle(SCREEN_WIDTH + 20, SCREEN_HEIGHT - 50 - 50 * i, SIDEBAR_WIDTH - 40, 40))
+    elif i < 7:
+        buttons.append(Rectangle(SCREEN_WIDTH + 20, SCREEN_HEIGHT - 100 - 50 * i, SIDEBAR_WIDTH - 40, 40))
     else:
-        buttons.append(Rectangle(SCREEN_WIDTH + 20, SCREEN_HEIGHT - 100 * i, SIDEBAR_WIDTH - 40, 40))
+        buttons.append(Rectangle(SCREEN_WIDTH + 20, SCREEN_HEIGHT + 100 - 90 * i, SIDEBAR_WIDTH - 40, 70))
+
 
 listOfColors = []
 for i in range(10000):
@@ -78,7 +96,8 @@ allFloorLayouts = [basicBoxLayout, basicObstacleLayout, complexShapeLayout]
 floorLayout = allFloorLayouts[0]
 # Runtime
 isRecording = False
-recordedData = []
+headingDistanceToWall = []
+distancesToBeacons = []
 estimatedPoints = set()
 pastPositions = []
 pastHeadings = []
@@ -89,6 +108,8 @@ startingPoint = Point(0, 0)
 notificationDisplayTime = 0
 simulationRunning = False
 currentFloorLayout = []
+beacons = []
+placingBeacons = False
 
 while running:
     # Handles timers
@@ -122,10 +143,10 @@ while running:
     # Draws background and side panel
     screen.fill((255, 255, 255))
     drawRectangle((67, 80, 88), SCREEN_WIDTH, SCREEN_HEIGHT, SIDEBAR_WIDTH, SCREEN_HEIGHT)
-    drawButtons(isRecording, simulationRunning)
-
+    drawButtons(isRecording, simulationRunning, len(beacons))
+    mousePosition = Point(pygame.mouse.get_pos()[0], SCREEN_HEIGHT - pygame.mouse.get_pos()[1])
     if pygame.mouse.get_pressed()[0] and delay == 0:
-        mousePosition = Point(pygame.mouse.get_pos()[0], SCREEN_HEIGHT - pygame.mouse.get_pos()[1])
+        delay = 15
         for i in range(len(buttons)):
             if buttons[i].insideRect(mousePosition):
                 if i < 3:
@@ -133,18 +154,24 @@ while running:
                     currentPosition = Point(SCREEN_WIDTH/2, SCREEN_HEIGHT/2)
                     isRecording = False
                     simulationRunning = False
-                elif i == 3:
+                    beacons.clear()
+                elif i == 3 and len(beacons) < 3:
+                    placingBeacons = True
+                elif i == 4:
+                    beacons.clear()
+                    isRecording = False
+                elif i == 5 and len(beacons) == 3: # Records Data
                     isRecording = not isRecording
                     simulationRunning = False
                     if isRecording:
-                        recordedData = []
+                        headingDistanceToWall = []
                         startingPosition = Point(currentPosition.x, currentPosition.y)
                         currentFloorLayout = floorLayout.copy()
-                    delay = 15
-                elif i == 4:
+                        currentBeacons = beacons.copy()
+                elif i == 6:
                     pass
-                elif i == 5 and not isRecording:
-                    if len(recordedData) == 0:
+                elif i == 7 and not isRecording:
+                    if len(headingDistanceToWall) == 0:
                         notificationDisplayTime = 50
                     else:
                         estimatedPoints, pastPositions, pastHeadings = headingDistanceToPoints(startingPosition, recordedData)
@@ -152,7 +179,10 @@ while running:
                         simulationRunning = not simulationRunning
                         positionIndex = 0
                         floorLayout = currentFloorLayout.copy()
-                        delay = 15
+        if placingBeacons and mousePosition.x < SCREEN_WIDTH:
+            beacons.append(mousePosition)
+            placingBeacons = False
+
 
 
     if notificationDisplayTime > 0:
@@ -175,7 +205,11 @@ while running:
         drawCircle((0, 0, 0), currentPosition, roombaRadius)
         drawLine((100, 100, 255), LineSegment(currentPosition, Point(currentPosition.x + 40 * math.cos(heading), currentPosition.y + 40 * math.sin(heading))))
 
+    if placingBeacons:
+        drawHollowCircle((0, 0, 255), mousePosition, 10, 1)
 
+    for beacon in beacons:
+        drawHollowCircle((0, 0, 255), beacon, 10, 1)
     # -------------------------------------------------- Calculates line based on roomba heading -------------------------------------------------- #
     if math.sin(heading) == 1:  # Points straight down
         roombaToBorderSegment = LineSegment(currentPosition, Point(currentPosition.x, SCREEN_HEIGHT))
@@ -206,8 +240,11 @@ while running:
 
     if closestIntersection != -1:
         if isRecording:
-            recordedData.append((round(math.degrees(heading) % 360, 4), round(LineSegment(currentPosition, closestIntersection).length(), 4), isMoving, 1))
-
+            headingDistanceToWall.append((round(math.degrees(heading) % 360, 4), round(LineSegment(currentPosition, closestIntersection).length(), 4), isMoving, 1))
+            distanceToBeacon = []
+            for eachBeacon in beacons:
+                distanceToBeacon.append(LineSegment(currentPosition, eachBeacon).length())
+            distancesToBeacons.append(distanceToBeacon)
     pygame.display.update()
     clock.tick(60)  # limits FPS to 60
 
