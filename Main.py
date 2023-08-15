@@ -1,8 +1,4 @@
-import sys
-import time
-
 import pygame
-from Math import *
 import random
 from Algorithm import *
 
@@ -20,7 +16,7 @@ def drawLine(color, ls):
 def writeText(color, text, size, x, y):
     font = pygame.font.SysFont("arial", size).render(text, True, color)
     screen.blit(font, (x, SCREEN_HEIGHT - y))
-def drawButtons(recording, simRecording, numBeacons):
+def drawButtons(recording, sim1Running, sim2Running, numBeacons):
     TEAL = (125, 187, 195)
     PURPLE = (138, 131, 195)
     ORANGE = (247, 179, 43)
@@ -46,15 +42,15 @@ def drawButtons(recording, simRecording, numBeacons):
             writeText(PURPLE, "Load Data", 24, buttons[i].topLeft.x + 12, buttons[i].topLeft.y - 5)
         elif i == 7:
             drawHollowRectangle(ORANGE, buttons[i], 1)
-            if simRecording:
-                writeText(ORANGE, "Stop", 22, buttons[i].topLeft.x + 42, buttons[i].topLeft.y - 5)
+            if sim1Running:
+                writeText(ORANGE, "Stop", 22, buttons[i].topLeft.x + 65, buttons[i].topLeft.y - 5)
             else:
                 writeText(ORANGE, "Distance-Heading", 22, buttons[i].topLeft.x + 10, buttons[i].topLeft.y - 5)
             writeText(ORANGE, "Simulation", 22, buttons[i].topLeft.x + 38, buttons[i].topLeft.y - 35)
         elif i == 8:
             drawHollowRectangle(ORANGE, buttons[i], 1)
-            if simRecording:
-                writeText(ORANGE, "Stop", 22, buttons[i].topLeft.x + 42, buttons[i].topLeft.y - 5)
+            if sim2Running:
+                writeText(ORANGE, "Stop", 22, buttons[i].topLeft.x + 65, buttons[i].topLeft.y - 5)
             else:
                 writeText(ORANGE, "Triangulation", 22, buttons[i].topLeft.x + 28, buttons[i].topLeft.y - 5)
             writeText(ORANGE, "Simulation", 22, buttons[i].topLeft.x + 38, buttons[i].topLeft.y - 35)
@@ -106,7 +102,8 @@ positionIndex = 0
 delay = 0
 startingPoint = Point(0, 0)
 notificationDisplayTime = 0
-simulationRunning = False
+headingDistanceSimulationRunning = False
+triangulationSimulationRunning = False
 currentFloorLayout = []
 beacons = []
 placingBeacons = False
@@ -143,7 +140,7 @@ while running:
     # Draws background and side panel
     screen.fill((255, 255, 255))
     drawRectangle((67, 80, 88), SCREEN_WIDTH, SCREEN_HEIGHT, SIDEBAR_WIDTH, SCREEN_HEIGHT)
-    drawButtons(isRecording, simulationRunning, len(beacons))
+    drawButtons(isRecording, headingDistanceSimulationRunning, triangulationSimulationRunning, len(beacons))
     mousePosition = Point(pygame.mouse.get_pos()[0], SCREEN_HEIGHT - pygame.mouse.get_pos()[1])
     if pygame.mouse.get_pressed()[0] and delay == 0:
         delay = 15
@@ -165,6 +162,8 @@ while running:
                     simulationRunning = False
                     if isRecording:
                         headingDistanceToWall = []
+                        test = Point(currentPosition.x, currentPosition.y)
+                        print(test.x, test.y)
                         startingPosition = Point(currentPosition.x, currentPosition.y)
                         currentFloorLayout = floorLayout.copy()
                         currentBeacons = beacons.copy()
@@ -174,20 +173,30 @@ while running:
                     if len(headingDistanceToWall) == 0:
                         notificationDisplayTime = 50
                     else:
-                        estimatedPoints, pastPositions, pastHeadings = headingDistanceToPoints(startingPosition, recordedData)
+                        estimatedPoints, pastPositions, pastHeadings = headingDistanceToPoints(Point(startingPosition.x, startingPosition.y), headingDistanceToWall)
+                        print(len(pastPositions))
                         groupedPoints = fitLineToData(list(estimatedPoints))
-                        simulationRunning = not simulationRunning
+                        headingDistanceSimulationRunning = not headingDistanceSimulationRunning
                         positionIndex = 0
                         floorLayout = currentFloorLayout.copy()
+                elif i == 8 and not isRecording:
+                    if len(distancesToBeacons) == 0:
+                        notificationDisplayTime = 50
+                    else:
+                        pastPositions, pastHeadings = triangulation(beacons, distancesToBeacons)
+                        print(len(pastPositions))
+                        triangulationSimulationRunning = not triangulationSimulationRunning
+                        positionIndex = 0
+                        floorLayout = currentFloorLayout.copy()
+
         if placingBeacons and mousePosition.x < SCREEN_WIDTH:
             beacons.append(mousePosition)
             placingBeacons = False
 
 
-
     if notificationDisplayTime > 0:
         writeText((255, 0, 0), "No data available", 20, SCREEN_WIDTH + 20, 50)
-    if simulationRunning:
+    if headingDistanceSimulationRunning:
         colorIndex = 0
         for eachCollectionPoints in groupedPoints:
             for eachPoint in groupedPoints[eachCollectionPoints]:
@@ -200,7 +209,16 @@ while running:
             drawLine((100, 100, 255), LineSegment(pastPositions[positionIndex], Point(pastPositions[positionIndex].x + 40 * math.cos(math.radians(retraceHeading)), pastPositions[positionIndex].y + 40 * math.sin(math.radians(retraceHeading)))))
             positionIndex += 1
         else:
-            simulationRunning = False
+            headingDistanceSimulationRunning = False
+    elif triangulationSimulationRunning:
+        if positionIndex < len(pastPositions):
+            retraceHeading = pastHeadings[positionIndex]
+            drawHollowCircle((0, 0, 0), pastPositions[positionIndex], roombaRadius, 1)
+            drawLine((100, 100, 255), LineSegment(pastPositions[positionIndex], Point(pastPositions[positionIndex].x + 40 * math.cos(math.radians(retraceHeading)), pastPositions[positionIndex].y + 40 * math.sin(math.radians(retraceHeading)))))
+            positionIndex += 1
+        else:
+            triangulationSimulationRunning = False
+
     else:
         drawCircle((0, 0, 0), currentPosition, roombaRadius)
         drawLine((100, 100, 255), LineSegment(currentPosition, Point(currentPosition.x + 40 * math.cos(heading), currentPosition.y + 40 * math.sin(heading))))

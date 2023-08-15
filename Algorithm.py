@@ -25,7 +25,9 @@ def headingDistanceToPoints(p, data):
     return allPoints, positionData, headingData
 
 def triangulation(beaconCoordinates, data):
+    EPSILON = 0.0001
     positionData = []
+    headingData = []
     b1 = beaconCoordinates[0]
     b2 = beaconCoordinates[1]
     b3 = beaconCoordinates[2]
@@ -40,9 +42,22 @@ def triangulation(beaconCoordinates, data):
         intercepts = quadraticFormula(a, b, c)
         for eachIntercept in intercepts:
             y = m * eachIntercept + intercept
-            if (eachIntercept - b3.x) ** 2 + (y - b3.y) ** 2 == eachPoint[2] ** 2:
+            if (eachIntercept - b3.x) ** 2 + (y - b3.y) ** 2 - eachPoint[2] ** 2 < EPSILON:
                 positionData.append(Point(eachIntercept, y))
-    return positionData
+    for i in range(len(positionData) - 1):
+        deltaX, deltaY = positionData[i + 1].x - positionData[i].x, positionData[i + 1].y - positionData[i].y
+        if deltaX == 0 and deltaY == 0:
+            if len(headingData) == 0:
+                angle = 0
+            else:
+                angle = headingData[i - 1]
+        elif deltaX == 0:
+            angle = math.pi/2
+        else:
+            angle = math.atan(deltaY/deltaX)
+        headingData.append(math.degrees(angle))
+    positionData.remove(positionData[0])
+    return positionData, headingData
 
 def partition(p, arr, low, high):
     pivot = arr[high]
@@ -123,13 +138,3 @@ def closestPointToP(p, points):
     for eachPoint in duplicatePoints:
         points.remove(eachPoint)
     return closestPoint
-
-
-b1 = Point(2, 13)
-b2 = Point(13, 11)
-b3 = Point(10, 0)
-
-distances = [[10, 5, 7]]
-inter = triangulation([b1, b2, b3], distances)
-
-print(inter[0].x, inter[0].y)
