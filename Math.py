@@ -24,6 +24,8 @@ class LineSegment:
         return (self.y1 - self.y2) / (self.x1 - self.x2)
 
     def verticalSlope(self):
+        if self.y1 == self.y2:
+            print(self.x1, self.y1, self.x2, self.y2)
         return (self.x1 - self.x2) / (self.y1 - self.y2)
 
     def intercept(self):
@@ -63,9 +65,10 @@ def quadraticFormula(a, b, c):
     else:
         return [(-b + math.sqrt(discriminant)) / (2 * a), (-b - math.sqrt(discriminant)) / (2 * a)]
 def coordinatesToPoints(coordinates):
+    SCALE_FACTOR = 100
     points = []
     for eachCoordinate in coordinates:
-        points.append(Point(eachCoordinate[0], eachCoordinate[1]))
+        points.append(Point(SCALE_FACTOR * eachCoordinate[0], SCALE_FACTOR * eachCoordinate[1]))
     return points
 
 # Intersection/Collision Logic
@@ -129,3 +132,5 @@ def checkCollisions(circleCenter, radius, allObstacles):
             if circleLineSegmentIntersection(circleCenter, radius, LineSegment(eachObstacle[i], eachObstacle[i + 1])):
                 anyCollision = True
     return anyCollision
+
+

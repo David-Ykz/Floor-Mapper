@@ -58,7 +58,7 @@ for i in range(6):
     if i < 3:
         buttons.append(Rectangle(SCREEN_WIDTH + 20, SCREEN_HEIGHT - 50 - 50 * i, SIDEBAR_WIDTH - 40, 40))
     else:
-        buttons.append(Rectangle(SCREEN_WIDTH + 20, SCREEN_HEIGHT - 300 - 100 * i, SIDEBAR_WIDTH - 40, 40))
+        buttons.append(Rectangle(SCREEN_WIDTH + 20, SCREEN_HEIGHT - 100 * i, SIDEBAR_WIDTH - 40, 40))
 
 listOfColors = []
 for i in range(10000):
@@ -71,11 +71,10 @@ startingPosition = Point(SCREEN_WIDTH/2, SCREEN_HEIGHT/2)
 heading = math.pi/2
 roombaRadius = 20
 # Map Layout
-basicBoxLayout = [coordinatesToPoints([(400, 200), (800, 200), (800, 600), (400, 600), (400, 200)])]
-basicObstacleLayout = [coordinatesToPoints([(100, 100), (400, 100), (400, 300), (100, 700), (1000, 700), (1000, 300)]), coordinatesToPoints([(700, 600), (900, 600), (700, 500), (900, 500)])]
-complicatedShapeLayout = [coordinatesToPoints([(200, 100), (1000, 100), (800, 700), (400, 700), (400, 400), (200, 400), (200, 100)])]
-boxObstacleLayout = [coordinatesToPoints([(200, 200), (900, 200), (900, 600), (200, 600), (200, 200)]), coordinatesToPoints([(300, 300), (400, 300), (400, 350), (300, 350), (300, 300)])]
-allFloorLayouts = [basicBoxLayout, complicatedShapeLayout, boxObstacleLayout]
+basicBoxLayout = [coordinatesToPoints([(4, 2), (8, 2), (8, 6), (4, 6), (4, 2)])]
+basicObstacleLayout = [coordinatesToPoints([(1, 1), (4, 1), (4, 3), (10, 3), (10, 7), (1, 7), (1, 1)]), coordinatesToPoints([(7, 6), (9, 6), (9, 5), (7, 5), (7, 6)])]
+complexShapeLayout = [coordinatesToPoints([(1, 3), (3, 1), (5, 1), (7, 3), (8, 3), (8, 1), (9.5, 1), (9.5, 3), (11, 3), (11, 7), (9.5, 7), (9.5, 5), (7, 5), (5, 7), (3, 7), (1, 5), (1, 3)]), coordinatesToPoints([(3, 3), (5, 3), (5, 5), (3, 5), (3, 3)])]
+allFloorLayouts = [basicBoxLayout, basicObstacleLayout, complexShapeLayout]
 floorLayout = allFloorLayouts[0]
 # Runtime
 isRecording = False

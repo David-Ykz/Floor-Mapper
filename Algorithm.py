@@ -3,7 +3,7 @@ from Math import *
 def headingDistanceToPoints(p, data):
     previousHeading = 0
     obstaclePoint = Point(0, 0)
-    allPoints = set()
+    allPoints = []
     positionData = []
     headingData = []
     for dataPoint in data:
@@ -12,13 +12,13 @@ def headingDistanceToPoints(p, data):
             if currentHeading != previousHeading:
                 obstaclePoint = Point(p.x + (distanceToObstacle + averageVelocity) * math.cos(math.radians(currentHeading)), p.y + (distanceToObstacle + averageVelocity) * math.sin(math.radians(currentHeading)))
                 previousHeading = currentHeading
-                allPoints.add(obstaclePoint)
+                allPoints.append(obstaclePoint)
             deltaDistance = LineSegment(p, obstaclePoint).length() - distanceToObstacle
             p.x += deltaDistance * math.cos(math.radians(currentHeading))
             p.y += deltaDistance * math.sin(math.radians(currentHeading))
         elif currentHeading != previousHeading:
             obstaclePoint = Point(p.x + distanceToObstacle * math.cos(math.radians(currentHeading)), p.y + distanceToObstacle * math.sin(math.radians(currentHeading)))
-            allPoints.add(obstaclePoint)
+            allPoints.append(obstaclePoint)
             previousHeading = currentHeading
         positionData.append(Point(p.x, p.y))
         headingData.append(currentHeading)
@@ -93,9 +93,14 @@ def findClosestPoint(p, points, collection, index):
         findClosestPoint(nextClosestPoint, points, collection, closestPoint)
 
 def closestPointToP(p, points):
+    duplicatePoints = []
     closestPoint = points[0]
     for eachPoint in points:
-        if LineSegment(p, eachPoint).length() < LineSegment(p, closestPoint).length():
+        if LineSegment(p, eachPoint).length() == 0:
+            duplicatePoints.append(eachPoint)
+        elif LineSegment(p, eachPoint).length() < LineSegment(p, closestPoint).length():
             closestPoint = eachPoint
+    for eachPoint in duplicatePoints:
+        points.remove(eachPoint)
     return closestPoint
 
