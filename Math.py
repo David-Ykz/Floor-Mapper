@@ -7,6 +7,8 @@ class Point:
         self.x = round(x, 5)
         self.y = round(y, 5)
 
+    def toString(self):
+        return str(self.x) + "," + str(self.y)
 
 class LineSegment:
     def __init__(self, p1, p2):
@@ -124,6 +126,8 @@ def circleLineSegmentIntersection(circleCenter, radius, ls):
             return True
     return False
 
+def isCircleTouching(p1, r1, p2, r2):
+    return (p2.x - p1.x) ** 2 + (p2.y - p1.y) ** 2 <= r1 + r2
 
 def checkCollisions(circleCenter, radius, allObstacles):
     anyCollision = False

@@ -106,6 +106,7 @@ headingDistanceSimulationRunning = False
 triangulationSimulationRunning = False
 currentFloorLayout = []
 beacons = []
+boundaryPoints = []
 placingBeacons = False
 
 while running:
@@ -183,7 +184,7 @@ while running:
                     if len(distancesToBeacons) == 0:
                         notificationDisplayTime = 50
                     else:
-                        pastPositions, pastHeadings = triangulation(beacons, distancesToBeacons)
+                        pastPositions, pastHeadings, boundaryPoints = triangulation(beacons, distancesToBeacons)
                         print(len(pastPositions))
                         triangulationSimulationRunning = not triangulationSimulationRunning
                         positionIndex = 0
@@ -216,6 +217,8 @@ while running:
             drawHollowCircle((0, 0, 0), pastPositions[positionIndex], roombaRadius, 1)
             drawLine((100, 100, 255), LineSegment(pastPositions[positionIndex], Point(pastPositions[positionIndex].x + 40 * math.cos(math.radians(retraceHeading)), pastPositions[positionIndex].y + 40 * math.sin(math.radians(retraceHeading)))))
             positionIndex += 1
+            for eachPoint in boundaryPoints:
+                drawHollowCircle((255, 0, 0), eachPoint, roombaRadius, 1)
         else:
             triangulationSimulationRunning = False
 

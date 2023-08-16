@@ -1,5 +1,15 @@
 from Math import *
 
+def removeDuplicatePoints(data):
+    alreadyVisited = set()
+    uniquePoints = []
+    for eachPoint in data:
+        if eachPoint.toString() not in alreadyVisited:
+            uniquePoints.append(eachPoint)
+            alreadyVisited.add(eachPoint.toString())
+    return uniquePoints
+
+
 def headingDistanceToPoints(p, data):
     previousHeading = 0
     obstaclePoint = Point(0, 0)
@@ -22,10 +32,11 @@ def headingDistanceToPoints(p, data):
             previousHeading = currentHeading
         positionData.append(Point(p.x, p.y))
         headingData.append(currentHeading)
+    allPoints = removeDuplicatePoints(allPoints)
     return allPoints, positionData, headingData
 
 def triangulation(beaconCoordinates, data):
-    EPSILON = 0.0001
+    EPSILON = 0.001
     positionData = []
     headingData = []
     b1 = beaconCoordinates[0]
@@ -57,7 +68,32 @@ def triangulation(beaconCoordinates, data):
             angle = math.atan(deltaY/deltaX)
         headingData.append(math.degrees(angle))
     positionData.remove(positionData[0])
-    return positionData, headingData
+
+    uniquePoints = removeDuplicatePoints(positionData)
+
+    return positionData, headingData, filterPointsByNumIntersections(computeCircleIntersectionsForPoints(uniquePoints, 20))
+
+def computeCircleIntersectionsForPoints(points, r):
+    intersectionsPerPoint = dict()
+    for eachPoint in points:
+        for otherPoint in points:
+            if eachPoint != otherPoint and isCircleTouching(eachPoint, r, otherPoint, r):
+                if eachPoint in intersectionsPerPoint:
+                    currentCount = intersectionsPerPoint[eachPoint]
+                    intersectionsPerPoint.update({eachPoint:currentCount+1})
+                else:
+                    intersectionsPerPoint.update({eachPoint:1})
+    return intersectionsPerPoint
+
+def filterPointsByNumIntersections(intersectionsPerPoint):
+    RADIUS = 20
+    VELOCITY = 5
+    CUTOFF_THRESHOLD = 2 * RADIUS / VELOCITY
+    filteredPoints = []
+    for eachPoint in intersectionsPerPoint:
+        if intersectionsPerPoint[eachPoint] <= CUTOFF_THRESHOLD:
+            filteredPoints.append(eachPoint)
+    return filteredPoints
 
 def partition(p, arr, low, high):
     pivot = arr[high]
@@ -128,13 +164,9 @@ def findClosestPoint(p, points, collection, index):
         findClosestPoint(nextClosestPoint, points, collection, closestPoint)
 
 def closestPointToP(p, points):
-    duplicatePoints = []
     closestPoint = points[0]
     for eachPoint in points:
-        if LineSegment(p, eachPoint).length() == 0:
-            duplicatePoints.append(eachPoint)
-        elif LineSegment(p, eachPoint).length() < LineSegment(p, closestPoint).length():
+        if LineSegment(p, eachPoint).length() < LineSegment(p, closestPoint).length():
             closestPoint = eachPoint
-    for eachPoint in duplicatePoints:
-        points.remove(eachPoint)
     return closestPoint
+
