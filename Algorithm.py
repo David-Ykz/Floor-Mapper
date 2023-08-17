@@ -79,19 +79,33 @@ def computeCircleIntersectionsForPoints(points, r):
         for otherPoint in points:
             if eachPoint != otherPoint and isCircleTouching(eachPoint, r, otherPoint, r):
                 if eachPoint in intersectionsPerPoint:
-                    currentCount = intersectionsPerPoint[eachPoint]
-                    intersectionsPerPoint.update({eachPoint:currentCount+1})
+                    intersectionsPerPoint[eachPoint].append(otherPoint)
                 else:
-                    intersectionsPerPoint.update({eachPoint:1})
+                    intersectionsPerPoint.update({eachPoint:[otherPoint]})
     return intersectionsPerPoint
 
 def filterPointsByNumIntersections(intersectionsPerPoint):
     RADIUS = 20
     VELOCITY = 5
-    CUTOFF_THRESHOLD = 2 * RADIUS / VELOCITY
+    CUTOFF_THRESHOLD = 3
     filteredPoints = []
     for eachPoint in intersectionsPerPoint:
-        if intersectionsPerPoint[eachPoint] <= CUTOFF_THRESHOLD:
+        if len(intersectionsPerPoint[eachPoint]) <= CUTOFF_THRESHOLD:
+            filteredPoints.append(eachPoint)
+    return filteredPoints
+
+def filterPointsByForces(intersectionsPerPoint):
+    print("")
+    filteredPoints = []
+    threshold = 20
+    for eachPoint in intersectionsPerPoint:
+        deltaX, deltaY = 0, 0
+        for otherPoints in intersectionsPerPoint[eachPoint]:
+            deltaX += otherPoints.x - eachPoint.x
+            deltaY += otherPoints.y - eachPoint.y
+        print(eachPoint.x, deltaX, deltaY)
+#        print(math.sqrt(deltaX ** 2 + deltaY ** 2))
+        if math.sqrt(deltaX ** 2 + deltaY ** 2) > threshold:
             filteredPoints.append(eachPoint)
     return filteredPoints
 
@@ -169,4 +183,6 @@ def closestPointToP(p, points):
         if LineSegment(p, eachPoint).length() < LineSegment(p, closestPoint).length():
             closestPoint = eachPoint
     return closestPoint
+
+
 

@@ -127,7 +127,7 @@ def circleLineSegmentIntersection(circleCenter, radius, ls):
     return False
 
 def isCircleTouching(p1, r1, p2, r2):
-    return (p2.x - p1.x) ** 2 + (p2.y - p1.y) ** 2 <= r1 + r2
+    return math.sqrt((p2.x - p1.x) ** 2 + (p2.y - p1.y) ** 2) <= r1 + r2
 
 def checkCollisions(circleCenter, radius, allObstacles):
     anyCollision = False

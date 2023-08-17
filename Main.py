@@ -105,7 +105,7 @@ notificationDisplayTime = 0
 headingDistanceSimulationRunning = False
 triangulationSimulationRunning = False
 currentFloorLayout = []
-beacons = []
+beacons = [Point(100, 100), Point(200, 200), Point(300, 300)]
 boundaryPoints = []
 placingBeacons = False
 
@@ -163,8 +163,6 @@ while running:
                     simulationRunning = False
                     if isRecording:
                         headingDistanceToWall = []
-                        test = Point(currentPosition.x, currentPosition.y)
-                        print(test.x, test.y)
                         startingPosition = Point(currentPosition.x, currentPosition.y)
                         currentFloorLayout = floorLayout.copy()
                         currentBeacons = beacons.copy()
@@ -217,6 +215,20 @@ while running:
             drawHollowCircle((0, 0, 0), pastPositions[positionIndex], roombaRadius, 1)
             drawLine((100, 100, 255), LineSegment(pastPositions[positionIndex], Point(pastPositions[positionIndex].x + 40 * math.cos(math.radians(retraceHeading)), pastPositions[positionIndex].y + 40 * math.sin(math.radians(retraceHeading)))))
             positionIndex += 1
+#            for eachPoint in pastPositions:
+#                drawHollowCircle((0, 255, 0), eachPoint, roombaRadius, 1)
+            testBoundary = []
+            for i in range(3):
+                testBoundary.append(Point(300 + i * 20, 400))
+
+#            for i in range(10):
+#                for j in range(10):
+#                    testBoundary.append(Point(200 + i * 20, 100 + j * 20))
+            for eachPoint in testBoundary:
+                drawHollowCircle((0, 255, 0), eachPoint, roombaRadius, 1)
+
+            boundaryPoints = filterPointsByForces(computeCircleIntersectionsForPoints(testBoundary, 20))
+
             for eachPoint in boundaryPoints:
                 drawHollowCircle((255, 0, 0), eachPoint, roombaRadius, 1)
         else:
@@ -266,6 +278,25 @@ while running:
             for eachBeacon in beacons:
                 distanceToBeacon.append(LineSegment(currentPosition, eachBeacon).length())
             distancesToBeacons.append(distanceToBeacon)
+
+    testBoundary = []
+    for i in range(10):
+        for j in range(10):
+            if i < 3 or i > 6:
+                testBoundary.append(Point(300 + i * 21, 200 + j * 21))
+    for i in range(4):
+        for j in range(2):
+            testBoundary.append(Point(300 + (i+3) * 21, 200 + 21 * j))
+            testBoundary.append(Point(300 + (i+3) * 21, 200 + 21 * (j + 8)))
+
+    for eachPoint in testBoundary:
+        drawHollowCircle((0, 255, 0), eachPoint, roombaRadius, 1)
+
+    boundaryPoints = filterPointsByForces(computeCircleIntersectionsForPoints(testBoundary, 20))
+
+    for eachPoint in boundaryPoints:
+        drawHollowCircle((255, 0, 0), eachPoint, roombaRadius, 1)
+
     pygame.display.update()
     clock.tick(60)  # limits FPS to 60
 
