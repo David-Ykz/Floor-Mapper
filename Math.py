@@ -138,3 +138,22 @@ def checkCollisions(circleCenter, radius, allObstacles):
     return anyCollision
 
 
+def circleLineIntersection(circleCenter, radius, m, b, isVertical):
+    if isVertical:
+        if abs(circleCenter.x) - abs(b) == radius:
+            return Point(b, circleCenter.y)
+        else:
+            radical = math.sqrt(radius ** 2 - (b - circleCenter.x) ** 2)
+            return [Point(b, circleCenter.y + radical), Point(b, circleCenter.y - radical)]
+    else:
+        k = b - circleCenter.y
+        a = 1 + m ** 2
+        b = 2 * (k - circleCenter.x)
+        c = circleCenter.x ** 2 + k ** 2 - radius ** 2
+        intercepts = []
+        for eachX in quadraticFormula(a, b, c):
+            intercepts.append(Point(eachX, m * eachX + b))
+        return intercepts
+
+
+

@@ -95,16 +95,13 @@ def filterPointsByNumIntersections(intersectionsPerPoint):
     return filteredPoints
 
 def filterPointsByForces(intersectionsPerPoint):
-    print("")
     filteredPoints = []
-    threshold = 20
+    threshold = 5
     for eachPoint in intersectionsPerPoint:
         deltaX, deltaY = 0, 0
         for otherPoints in intersectionsPerPoint[eachPoint]:
             deltaX += otherPoints.x - eachPoint.x
             deltaY += otherPoints.y - eachPoint.y
-        print(eachPoint.x, deltaX, deltaY)
-#        print(math.sqrt(deltaX ** 2 + deltaY ** 2))
         if math.sqrt(deltaX ** 2 + deltaY ** 2) > threshold:
             filteredPoints.append(eachPoint)
     return filteredPoints
