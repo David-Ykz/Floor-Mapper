@@ -63,7 +63,7 @@ screen = pygame.display.set_mode((SCREEN_WIDTH + SIDEBAR_WIDTH, SCREEN_HEIGHT))
 clock = pygame.time.Clock()
 running = True
 buttons = []
-
+# Initialize Buttons
 for i in range(9):
     if i < 3:
         buttons.append(Rectangle(SCREEN_WIDTH + 20, SCREEN_HEIGHT - 50 - 50 * i, SIDEBAR_WIDTH - 40, 40))
@@ -71,19 +71,16 @@ for i in range(9):
         buttons.append(Rectangle(SCREEN_WIDTH + 20, SCREEN_HEIGHT - 100 - 50 * i, SIDEBAR_WIDTH - 40, 40))
     else:
         buttons.append(Rectangle(SCREEN_WIDTH + 20, SCREEN_HEIGHT + 100 - 90 * i, SIDEBAR_WIDTH - 40, 70))
-
-
+# Initialize Colors
+BLACK, WHITE, RED = (0, 0, 0), (255, 255, 255), (255, 0, 0)
 listOfColors = []
 for i in range(10000):
     listOfColors.append((10 * random.randint(0, 25), 10 * random.randint(0, 25), 10 * random.randint(0, 25)))
 
-
 # Roomba Initialization
 currentPosition = Point(SCREEN_WIDTH/2, SCREEN_HEIGHT/2)
 startingPosition = Point(SCREEN_WIDTH/2, SCREEN_HEIGHT/2)
-heading = math.pi/2
-roombaRadius = 20
-roombaSpeed = 2
+roombaHeading, roombaRadius, roombaSpeed = math.pi/2, 20, 2
 # Map Layout
 basicBoxLayout = [coordinatesToPoints([(4, 2), (8, 2), (8, 6), (4, 6), (4, 2)])]
 basicObstacleLayout = [coordinatesToPoints([(1, 1), (4, 1), (4, 3), (10, 3), (10, 7), (1, 7), (1, 1)]), coordinatesToPoints([(7, 6), (9, 6), (9, 5), (7, 5), (7, 6)])]
@@ -91,27 +88,18 @@ complexShapeLayout = [coordinatesToPoints([(1, 3), (3, 1), (5, 1), (7, 3), (8, 3
 allFloorLayouts = [basicBoxLayout, basicObstacleLayout, complexShapeLayout]
 floorLayout = allFloorLayouts[0]
 # Runtime
-isRecording = False
-headingDistanceToWall, distancesToBeacons = [], []
-estimatedPoints = set()
-pastPositions = []
-pastHeadings = []
-groupedPoints = dict()
+isRecording, headingDistanceSimulationRunning, triangulationSimulationRunning, placingBeacons = False, False, False, False
+notificationDisplayTime, mouseInputDelay = 0, 0
+headingDistanceToWall, distancesToBeacons, wallPoints, truePositions, trueHeadings = [], [], [], [], []
+pastPositions, pastHeadings, groupedPoints = [], [], dict()
 positionIndex = 0
-delay = 0
-startingPoint = Point(0, 0)
-notificationDisplayTime = 0
-headingDistanceSimulationRunning, triangulationSimulationRunning = False, False
 currentFloorLayout = []
 beacons = [Point(500, 100), Point(200, 300), Point(800, 700)]
-boundaryPoints = []
-placingBeacons = False
-wallPoints = []
 
 while running:
     # Handles timers
-    if delay > 0:
-        delay -= 1
+    if mouseInputDelay > 0:
+        mouseInputDelay -= 1
     if notificationDisplayTime > 0:
         notificationDisplayTime -= 1
 
@@ -120,32 +108,41 @@ while running:
         if event.type == pygame.QUIT:
             running = False
 
-    # User input
+    # Heading direction input
     if pygame.key.get_pressed()[pygame.K_LEFT]:
-        heading += 0.05
+        roombaHeading += 0.05
     elif pygame.key.get_pressed()[pygame.K_RIGHT]:
-        heading -= 0.05
+        roombaHeading -= 0.05
 
+    # Movement input
     if pygame.key.get_pressed()[pygame.K_UP]:
-        currentPosition.x += roombaSpeed * math.cos(heading)
-        currentPosition.y += roombaSpeed * math.sin(heading)
+        currentPosition.x += roombaSpeed * math.cos(roombaHeading)
+        currentPosition.y += roombaSpeed * math.sin(roombaHeading)
         isMoving = True
         anyCollisions = checkCollisions(currentPosition, roombaRadius, floorLayout)
         if len(anyCollisions) > 0:
-            currentPosition.x -= roombaSpeed * math.cos(heading)
-            currentPosition.y -= roombaSpeed * math.sin(heading)
+            currentPosition.x -= roombaSpeed * math.cos(roombaHeading)
+            currentPosition.y -= roombaSpeed * math.sin(roombaHeading)
             wallPoints.extend(anyCollisions)
             isMoving = False
     else:
         isMoving = False
 
     # Draws background and side panel
-    screen.fill((255, 255, 255))
+    screen.fill(WHITE)
     drawRectangle((67, 80, 88), SCREEN_WIDTH, SCREEN_HEIGHT, SIDEBAR_WIDTH, SCREEN_HEIGHT)
     drawButtons(isRecording, headingDistanceSimulationRunning, triangulationSimulationRunning, len(beacons))
+
+    # Draws floor layout
+    for eachShape in floorLayout:
+        for i in range(len(eachShape) - 1):
+            connectingLineSegment = LineSegment(eachShape[i], eachShape[i + 1])
+            drawLine(BLACK, connectingLineSegment)
+
+    # Process mouse input
     mousePosition = Point(pygame.mouse.get_pos()[0], SCREEN_HEIGHT - pygame.mouse.get_pos()[1])
-    if pygame.mouse.get_pressed()[0] and delay == 0:
-        delay = 15
+    if pygame.mouse.get_pressed()[0] and mouseInputDelay == 0:
+        mouseInputDelay = 15
         for i in range(len(buttons)):
             if buttons[i].insideRect(mousePosition):
                 if i < 3:
@@ -169,6 +166,7 @@ while running:
                         startingPosition = Point(currentPosition.x, currentPosition.y)
                         currentFloorLayout = floorLayout.copy()
                         currentBeacons = beacons.copy()
+                        trueHeadings, truePositions = [], []
                 elif i == 6:
                     pass
                 elif i == 7 and not isRecording:
@@ -176,7 +174,6 @@ while running:
                         notificationDisplayTime = 50
                     else:
                         estimatedPoints, pastPositions, pastHeadings = headingDistanceToPoints(Point(startingPosition.x, startingPosition.y), headingDistanceToWall)
-                        print(len(pastPositions))
                         groupedPoints = fitLineToData(list(estimatedPoints))
                         headingDistanceSimulationRunning = not headingDistanceSimulationRunning
                         positionIndex = 0
@@ -185,56 +182,42 @@ while running:
                     if len(distancesToBeacons) == 0:
                         notificationDisplayTime = 50
                     else:
-                        pastPositions, pastHeadings, boundaryPoints = triangulation(beacons, distancesToBeacons)
-                        print(len(pastPositions))
+                        pastPositions = triangulation(beacons, distancesToBeacons)
                         triangulationSimulationRunning = not triangulationSimulationRunning
-
-                        wallPoints = removeDuplicatePoints(wallPoints)
-
-                        groupedPoints = fitLineToData(wallPoints)
+                        groupedPoints = fitLineToData(removeDuplicatePoints(wallPoints))
                         positionIndex = 0
                         floorLayout = currentFloorLayout.copy()
-                        for eachPoint in pastPositions:
-                            drawHollowCircle((0, 255, 0), eachPoint, roombaRadius, 1)
-                        boundaryPoints = filterPointsByForces(computeCircleIntersectionsForPoints(pastPositions, 20))
-
         if placingBeacons and mousePosition.x < SCREEN_WIDTH:
             beacons.append(mousePosition)
             placingBeacons = False
 
+    # Handles simulations when running
     if notificationDisplayTime > 0:
-        writeText((255, 0, 0), "No data available", 20, SCREEN_WIDTH + 20, 50)
-    if headingDistanceSimulationRunning:
+        writeText(RED, "No data available", 20, SCREEN_WIDTH + 20, 50)
+
+    if headingDistanceSimulationRunning or triangulationSimulationRunning:
         colorIndex = 0
+        # Draws lines
         for eachCollectionPoints in groupedPoints:
             for eachPoint in groupedPoints[eachCollectionPoints]:
                 drawCircle(listOfColors[colorIndex], eachPoint, 2)
             colorIndex += 1
-
-        if positionIndex < len(pastPositions):
-            retraceHeading = pastHeadings[positionIndex]
-            drawHollowCircle((0, 0, 0), pastPositions[positionIndex], roombaRadius, 1)
-            drawLine((100, 100, 255), LineSegment(pastPositions[positionIndex], Point(pastPositions[positionIndex].x + 40 * math.cos(math.radians(retraceHeading)), pastPositions[positionIndex].y + 40 * math.sin(math.radians(retraceHeading)))))
+        # Draws roomba
+        if positionIndex < min(len(pastPositions), len(trueHeadings)):
+            estimatedHeading, trueHeading = pastHeadings[positionIndex], trueHeadings[positionIndex]
+            # True roomba data
+            drawHollowCircle(BLACK, truePositions[positionIndex], roombaRadius, 1)
+            drawLine(BLACK, LineSegment(truePositions[positionIndex], Point(truePositions[positionIndex].x + 40 * math.cos(math.radians(trueHeading)), pastPositions[positionIndex].y + 40 * math.sin(math.radians(trueHeading)))))
+            # Estimated roomba data
+            drawHollowCircle(RED, pastPositions[positionIndex], roombaRadius, 1)
+            drawLine(RED, LineSegment(pastPositions[positionIndex], Point(pastPositions[positionIndex].x + 40 * math.cos(math.radians(estimatedHeading)), pastPositions[positionIndex].y + 40 * math.sin(math.radians(estimatedHeading)))))
             positionIndex += 1
         else:
-            headingDistanceSimulationRunning = False
-    elif triangulationSimulationRunning:
-        colorIndex = 0
-        for eachCollectionPoints in groupedPoints:
-            for eachPoint in groupedPoints[eachCollectionPoints]:
-                drawCircle(listOfColors[colorIndex], eachPoint, 2)
-            colorIndex += 1
-
-        if positionIndex < len(pastPositions):
- #           retraceHeading = pastHeadings[positionIndex]
-            drawHollowCircle((0, 0, 0), pastPositions[positionIndex], roombaRadius, 1)
-#            drawLine((100, 100, 255), LineSegment(pastPositions[positionIndex], Point(pastPositions[positionIndex].x + 40 * math.cos(math.radians(retraceHeading)), pastPositions[positionIndex].y + 40 * math.sin(math.radians(retraceHeading)))))
-            positionIndex += 1
-        else:
-            triangulationSimulationRunning = False
+            headingDistanceSimulationRunning, triangulationSimulationRunning = False, False
     else:
-        drawCircle((0, 0, 0), currentPosition, roombaRadius)
-        drawLine((100, 100, 255), LineSegment(currentPosition, Point(currentPosition.x + 40 * math.cos(heading), currentPosition.y + 40 * math.sin(heading))))
+        drawCircle(BLACK, currentPosition, roombaRadius)
+        drawLine((100, 100, 255), LineSegment(currentPosition, Point(currentPosition.x + 40 * math.cos(roombaHeading), currentPosition.y + 40 * math.sin(roombaHeading))))
+
 
     if placingBeacons:
         drawHollowCircle((0, 0, 255), mousePosition, 10, 1)
@@ -242,41 +225,40 @@ while running:
     for beacon in beacons:
         drawHollowCircle((0, 0, 255), beacon, 10, 1)
 
-
-    if math.sin(heading) == 1:  # Points straight down
+    # Calculates line from roomba to border
+    if math.sin(roombaHeading) == 1:  # Points straight down
         roombaToBorderSegment = LineSegment(currentPosition, Point(currentPosition.x, SCREEN_HEIGHT))
-    elif math.sin(heading) == -1:  # Points straight up
+    elif math.sin(roombaHeading) == -1:  # Points straight up
         roombaToBorderSegment = LineSegment(currentPosition, Point(currentPosition.x, 0))
     else:
-        slope = math.tan(heading)
-        if math.cos(heading) < 0:
+        slope = math.tan(roombaHeading)
+        if math.cos(roombaHeading) < 0:
             roombaToBorderSegment = LineSegment(currentPosition, Point(0, currentPosition.y - slope * currentPosition.x))
         else:
             roombaToBorderSegment = LineSegment(currentPosition, Point(SCREEN_WIDTH, currentPosition.y + slope * (SCREEN_WIDTH - currentPosition.x)))
 
-    intersections = []
+    # Calculates point of intersection (if any) between roomba-border line and floor layout
+    intersections, closestIntersection = [], -1
     for eachShape in floorLayout:
         for i in range(len(eachShape) - 1):
-            connectingLineSegment = LineSegment(eachShape[i], eachShape[i + 1])
-            drawLine((0, 0, 0), connectingLineSegment)
-            intersectionPoint = calculateSegmentIntersection(roombaToBorderSegment, connectingLineSegment)
+            intersectionPoint = calculateSegmentIntersection(roombaToBorderSegment, LineSegment(eachShape[i], eachShape[i + 1]))
             if intersectionPoint != -1:
                 intersections.append(intersectionPoint)
-
-    closestIntersection = -1
     if len(intersections) >= 1:
         closestIntersection = intersections[0]
         for intersection in intersections:
             if LineSegment(currentPosition, intersection).length() < LineSegment(currentPosition, closestIntersection).length():
                 closestIntersection = intersection
 
-    if closestIntersection != -1 and isRecording:
-        headingDistanceToWall.append((round(math.degrees(heading) % 360, 4), round(LineSegment(currentPosition, closestIntersection).length(), 4), isMoving, roombaSpeed))
+    # Records data
+    if isRecording and closestIntersection != -1:
+        headingDistanceToWall.append((round(math.degrees(roombaHeading) % 360, 4), round(LineSegment(currentPosition, closestIntersection).length(), 4), isMoving, roombaSpeed))
         distanceToBeacon = []
         for eachBeacon in beacons:
             distanceToBeacon.append(LineSegment(currentPosition, eachBeacon).length())
         distancesToBeacons.append(distanceToBeacon)
-
+        truePositions.append(Point(currentPosition.x, currentPosition.y))
+        trueHeadings.append(round(math.degrees(roombaHeading) % 360, 4))
 
     pygame.display.update()
     clock.tick(60)  # limits FPS to 60

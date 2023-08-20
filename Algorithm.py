@@ -38,7 +38,6 @@ def headingDistanceToPoints(p, data):
 def triangulation(beaconCoordinates, data):
     EPSILON = 0.001
     positionData = []
-    headingData = []
     b1 = beaconCoordinates[0]
     b2 = beaconCoordinates[1]
     b3 = beaconCoordinates[2]
@@ -55,23 +54,7 @@ def triangulation(beaconCoordinates, data):
             y = m * eachIntercept + intercept
             if (eachIntercept - b3.x) ** 2 + (y - b3.y) ** 2 - eachPoint[2] ** 2 < EPSILON:
                 positionData.append(Point(eachIntercept, y))
-    for i in range(len(positionData) - 1):
-        deltaX, deltaY = positionData[i + 1].x - positionData[i].x, positionData[i + 1].y - positionData[i].y
-        if deltaX == 0 and deltaY == 0:
-            if len(headingData) == 0:
-                angle = 0
-            else:
-                angle = headingData[i - 1]
-        elif deltaX == 0:
-            angle = math.pi/2
-        else:
-            angle = math.atan(deltaY/deltaX)
-        headingData.append(math.degrees(angle))
-    positionData.remove(positionData[0])
-
-    uniquePoints = removeDuplicatePoints(positionData)
-
-    return positionData, headingData, filterPointsByNumIntersections(computeCircleIntersectionsForPoints(uniquePoints, 20))
+    return positionData
 
 def computeCircleIntersectionsForPoints(points, r):
     intersectionsPerPoint = dict()
