@@ -130,30 +130,34 @@ def isCircleTouching(p1, r1, p2, r2):
     return math.sqrt((p2.x - p1.x) ** 2 + (p2.y - p1.y) ** 2) <= r1 + r2
 
 def checkCollisions(circleCenter, radius, allObstacles):
-    anyCollision = False
+    collisions = []
     for eachObstacle in allObstacles:
         for i in range(len(eachObstacle) - 1):
-            if circleLineSegmentIntersection(circleCenter, radius, LineSegment(eachObstacle[i], eachObstacle[i + 1])):
-                anyCollision = True
-    return anyCollision
+            ls = LineSegment(eachObstacle[i], eachObstacle[i + 1])
+            if circleLineSegmentIntersection(circleCenter, radius, ls):
+                if ls.isVerticalLine():
+                    m = 0
+                    b = ls.x1
+                    collisions.extend(circleLineIntersection(circleCenter, radius, m, b, True))
+                else:
+                    collisions.extend(circleLineIntersection(circleCenter, radius, ls.slope(), ls.intercept(), False))
+    return collisions
 
 
-def circleLineIntersection(circleCenter, radius, m, b, isVertical):
+def circleLineIntersection(circleCenter, radius, m, intercept, isVertical):
     if isVertical:
-        if abs(circleCenter.x) - abs(b) == radius:
-            return Point(b, circleCenter.y)
+        if abs(circleCenter.x) - abs(intercept) == radius:
+            return Point(intercept, circleCenter.y)
         else:
-            radical = math.sqrt(radius ** 2 - (b - circleCenter.x) ** 2)
-            return [Point(b, circleCenter.y + radical), Point(b, circleCenter.y - radical)]
+            radical = math.sqrt(radius ** 2 - (intercept - circleCenter.x) ** 2)
+            return [Point(intercept, circleCenter.y + radical), Point(intercept, circleCenter.y - radical)]
     else:
-        k = b - circleCenter.y
         a = 1 + m ** 2
-        b = 2 * (k - circleCenter.x)
-        c = circleCenter.x ** 2 + k ** 2 - radius ** 2
+        b = 2 * (m * intercept - circleCenter.x - m * circleCenter.y)
+        c = circleCenter.x ** 2 + circleCenter.y ** 2 + intercept ** 2 - 2 * intercept * circleCenter.y - radius ** 2
         intercepts = []
         for eachX in quadraticFormula(a, b, c):
-            intercepts.append(Point(eachX, m * eachX + b))
+            intercepts.append(Point(eachX, m * eachX + intercept))
         return intercepts
-
 
 
