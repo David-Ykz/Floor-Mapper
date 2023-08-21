@@ -130,19 +130,54 @@ def sortClosestPoints(p, arr, low, high): # Quicksort
         sortClosestPoints(p, arr, partitionIndex + 1, high)
 
 def fitLineToData(points):
+    # Returns an empty dictionary if there is insufficient data
     if len(points) < 2:
         return dict()
-    closestPoint = closestPointToP(Point(0, 0), points)
+    EPSILON = 1
+    VERTICAL_LINE_THRESHOLD = 10
     copiedPoints = points.copy()
-    copiedPoints.remove(closestPoint)
-    nextClosestPoint = closestPointToP(closestPoint, copiedPoints)
-    copiedPoints.remove(nextClosestPoint)
-    pointsInLines = dict()
-    pointsInLines.update({closestPoint:[closestPoint, nextClosestPoint]})
-    findClosestPoint(nextClosestPoint, copiedPoints, pointsInLines, closestPoint)
-    if len(pointsInLines[closestPoint]) < 3:
-        pointsInLines.pop(closestPoint)
-    return pointsInLines
+    # Finds the closest point to (0, 0)
+    startingPoint = closestPointToP(Point(0, 0), copiedPoints)
+    # Finds the closest point to the starting point
+    closestPoint = closestPointToP(startingPoint, copiedPoints)
+    groupedPoints = dict()
+    groupedPoints.update({closestPoint:[closestPoint, closestPoint]})
+    index = closestPoint
+    startingPoint = closestPoint
+    continueIterating = True
+    while continueIterating:
+        continueIterating = False
+        # Finds the closest point to the initial point
+        closestPoint = closestPointToP(startingPoint, copiedPoints)
+        lineToPoint = LineSegment(startingPoint, closestPoint)
+        # Checks if vertical line
+        if abs(lineToPoint.slope()) > VERTICAL_LINE_THRESHOLD:
+            # Measures slope deviation compared to sloe of points in the group
+            if abs(lineToPoint.verticalSlope()) < VERTICAL_LINE_THRESHOLD < abs(averageSlope(startingPoint, groupedPoints[index])):
+                groupedPoints[index].append(closestPoint)
+                if len(copiedPoints) > 1:
+                    startingPoint = closestPoint
+                    continueIterating = True
+            # If point is outside deviation bounds, it creates a new group
+            elif len(copiedPoints) > 2:
+                nextClosestPoint = closestPointToP(closestPoint, copiedPoints)
+                groupedPoints.update({closestPoint: [closestPoint, nextClosestPoint]})
+                index, startingPoint = closestPoint, nextClosestPoint
+                continueIterating = True
+        # Performs the same slope check except for non-vertical lines
+        elif absoluteDifference(lineToPoint.slope(), averageSlope(startingPoint, groupedPoints[index])) < EPSILON:
+            groupedPoints[index].append(closestPoint)
+            if len(copiedPoints) > 1:
+                startingPoint = closestPoint
+                continueIterating = True
+        elif len(copiedPoints) > 2:
+            nextClosestPoint = closestPointToP(closestPoint, copiedPoints)
+            groupedPoints.update({closestPoint: [closestPoint, nextClosestPoint]})
+            index, startingPoint = closestPoint, nextClosestPoint
+            continueIterating = True
+#    if len(groupedPoints[closestPoint]) < 3:
+#        groupedPoints.pop(closestPoint)
+    return groupedPoints
 
 def absoluteDifference(a, b):
     if a > b:
@@ -158,7 +193,7 @@ def averageSlope(p, arr):
     return slopes/(len(arr) - 1)
 
 def findClosestPoint(p, points, collection, index):
-    EPSILON = 0.1
+    EPSILON = 1
     VERTICAL_LINE_THRESHOLD = 10
     closestPoint = closestPointToP(p, points)
     points.remove(closestPoint)
@@ -188,6 +223,7 @@ def closestPointToP(p, points):
     for eachPoint in points:
         if LineSegment(p, eachPoint).length() < LineSegment(p, closestPoint).length():
             closestPoint = eachPoint
+    points.remove(closestPoint)
     return closestPoint
 
 def furthestPointToP(p, points):

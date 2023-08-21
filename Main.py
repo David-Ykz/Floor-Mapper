@@ -114,7 +114,6 @@ while running:
 
     noise = 1 / 100 * slider.getValue() ** 3
 
-    print(noise)
 
     # Heading direction input
     if pygame.key.get_pressed()[pygame.K_LEFT]:
@@ -267,7 +266,9 @@ while running:
 
     # Records data
     if isRecording and closestIntersection != -1:
-        headingDistanceToWall.append((round(math.degrees(roombaHeading) % 360, 4), round(LineSegment(currentPosition, closestIntersection).length(), 4), isMoving, roombaSpeed))
+        adjustedHeading = round(math.degrees(roombaHeading) % 360 + noise/10 * random.randint(-1, 1), 4)
+        adjustedDistance = round(LineSegment(currentPosition, closestIntersection).length() + noise * random.randint(-1, 1), 4)
+        headingDistanceToWall.append((adjustedHeading, adjustedDistance, isMoving, roombaSpeed))
         distanceToBeacon = []
         for eachBeacon in beacons:
             distanceToBeacon.append(LineSegment(currentPosition, eachBeacon).length())
