@@ -1,6 +1,8 @@
 import pygame
+import pygame_widgets
 import random
 from Algorithm import *
+from pygame_widgets.slider import Slider
 
 # Pygame Functions
 def drawCircle(color, p, r):
@@ -37,17 +39,14 @@ def drawButtons(recording, sim1Running, sim2Running, numBeacons):
                 writeText(PURPLE, "Stop Recording", 24, buttons[i].topLeft.x + 12, buttons[i].topLeft.y - 5)
             else:
                 writeText(PURPLE, "Start Recording", 24, buttons[i].topLeft.x + 12, buttons[i].topLeft.y - 5)
-        elif i == 6: # Load Data Button
-            drawHollowRectangle(PURPLE, buttons[i], 1)
-            writeText(PURPLE, "Load Data", 24, buttons[i].topLeft.x + 12, buttons[i].topLeft.y - 5)
-        elif i == 7:
+        elif i == 6:
             drawHollowRectangle(ORANGE, buttons[i], 1)
             if sim1Running:
                 writeText(ORANGE, "Stop", 22, buttons[i].topLeft.x + 65, buttons[i].topLeft.y - 5)
             else:
                 writeText(ORANGE, "Distance-Heading", 22, buttons[i].topLeft.x + 10, buttons[i].topLeft.y - 5)
             writeText(ORANGE, "Simulation", 22, buttons[i].topLeft.x + 38, buttons[i].topLeft.y - 35)
-        elif i == 8:
+        elif i == 7:
             drawHollowRectangle(ORANGE, buttons[i], 1)
             if sim2Running:
                 writeText(ORANGE, "Stop", 22, buttons[i].topLeft.x + 65, buttons[i].topLeft.y - 5)
@@ -64,18 +63,23 @@ clock = pygame.time.Clock()
 running = True
 buttons = []
 # Initialize Buttons
-for i in range(9):
+for i in range(8):
     if i < 3:
         buttons.append(Rectangle(SCREEN_WIDTH + 20, SCREEN_HEIGHT - 50 - 50 * i, SIDEBAR_WIDTH - 40, 40))
-    elif i < 7:
-        buttons.append(Rectangle(SCREEN_WIDTH + 20, SCREEN_HEIGHT - 100 - 50 * i, SIDEBAR_WIDTH - 40, 40))
+    elif i < 6:
+        buttons.append(Rectangle(SCREEN_WIDTH + 20, SCREEN_HEIGHT - 70 - 50 * i, SIDEBAR_WIDTH - 40, 40))
     else:
-        buttons.append(Rectangle(SCREEN_WIDTH + 20, SCREEN_HEIGHT + 100 - 90 * i, SIDEBAR_WIDTH - 40, 70))
+        buttons.append(Rectangle(SCREEN_WIDTH + 20, SCREEN_HEIGHT - 50 - 90 * i, SIDEBAR_WIDTH - 40, 70))
 # Initialize Colors
-BLACK, WHITE, RED = (0, 0, 0), (255, 255, 255), (255, 0, 0)
+BLACK, WHITE, RED, LIGHT_GREEN = (0, 0, 0), (255, 255, 255), (255, 0, 0), (107, 241, 120)
 listOfColors = []
 for i in range(10000):
     listOfColors.append((10 * random.randint(0, 25), 10 * random.randint(0, 25), 10 * random.randint(0, 25)))
+sliderX, sliderY = SCREEN_WIDTH + 35, 380
+slider = Slider(screen, sliderX, SCREEN_HEIGHT - sliderY, SIDEBAR_WIDTH - 70, 10, min=0, max=10, step=0.001, initial=0)
+randomNumbers = []
+for i in range(11):
+    randomNumbers.append(random.randint(-1, 1))
 
 # Roomba Initialization
 currentPosition = Point(SCREEN_WIDTH/2, SCREEN_HEIGHT/2)
@@ -108,6 +112,10 @@ while running:
         if event.type == pygame.QUIT:
             running = False
 
+    noise = 1 / 100 * slider.getValue() ** 3
+
+    print(noise)
+
     # Heading direction input
     if pygame.key.get_pressed()[pygame.K_LEFT]:
         roombaHeading += 0.05
@@ -133,6 +141,13 @@ while running:
     screen.fill(WHITE)
     drawRectangle((67, 80, 88), SCREEN_WIDTH, SCREEN_HEIGHT, SIDEBAR_WIDTH, SCREEN_HEIGHT)
     drawButtons(isRecording, headingDistanceSimulationRunning, triangulationSimulationRunning, len(beacons))
+    writeText(LIGHT_GREEN, "Slide To Adjust Noise", 20, sliderX - 15, sliderY + 35)
+    writeText(LIGHT_GREEN, "0", 20, sliderX - 22, sliderY + 7)
+    writeText(LIGHT_GREEN, "10", 20, sliderX + SIDEBAR_WIDTH - 60, sliderY + 7)
+    writeText(LIGHT_GREEN, "Example Variation", 25, sliderX - 15, sliderY - 30)
+    drawLine(LIGHT_GREEN, LineSegment(Point(SCREEN_WIDTH + 20, sliderY - 90), Point(SCREEN_WIDTH + SIDEBAR_WIDTH - 20, sliderY - 90)))
+    for i in range(11):
+        drawCircle(LIGHT_GREEN, Point(SCREEN_WIDTH + 20 + (SIDEBAR_WIDTH - 40)/10 * i, sliderY - 90 + noise * randomNumbers[i]), 4)
 
     # Draws floor layout
     for eachShape in floorLayout:
@@ -165,9 +180,7 @@ while running:
                         startingPosition = Point(currentPosition.x, currentPosition.y)
                         currentFloorLayout = floorLayout.copy()
                         currentBeacons = beacons.copy()
-                elif i == 6:
-                    pass
-                elif i == 7 and not isRecording:
+                elif i == 6 and not isRecording:
                     if len(headingDistanceToWall) == 0:
                         notificationDisplayTime = 50
                     else:
@@ -177,7 +190,7 @@ while running:
                         headingDistanceSimulationRunning = not headingDistanceSimulationRunning
                         positionIndex = 0
                         floorLayout = currentFloorLayout.copy()
-                elif i == 8 and not isRecording:
+                elif i == 7 and not isRecording:
                     if len(distancesToBeacons) == 0:
                         notificationDisplayTime = 50
                     else:
@@ -262,6 +275,8 @@ while running:
         truePositions.append(Point(currentPosition.x, currentPosition.y))
         trueHeadings.append(round(math.degrees(roombaHeading) % 360, 4))
 
+
+    pygame_widgets.update(pygame.event.get())
     pygame.display.update()
     clock.tick(60)  # limits FPS to 60
 
