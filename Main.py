@@ -182,7 +182,7 @@ while running:
                     if len(distancesToBeacons) == 0:
                         notificationDisplayTime = 50
                     else:
-                        pastPositions = triangulation(beacons, distancesToBeacons)
+                        pastPositions, pastHeadings = triangulation(beacons, distancesToBeacons)
                         triangulationSimulationRunning = not triangulationSimulationRunning
                         groupedPoints = fitLineToData(removeDuplicatePoints(wallPoints))
                         positionIndex = 0
