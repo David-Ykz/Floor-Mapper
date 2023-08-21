@@ -190,5 +190,17 @@ def closestPointToP(p, points):
             closestPoint = eachPoint
     return closestPoint
 
+def furthestPointToP(p, points):
+    furthestPoint = points[0]
+    for eachPoint in points:
+        if LineSegment(p, eachPoint).length() > LineSegment(p, furthestPoint).length():
+            furthestPoint = eachPoint
+    return furthestPoint
 
-
+def pointsToLines(groupedPoints):
+    lines = []
+    for eachGroup in groupedPoints:
+        firstPoint = furthestPointToP(groupedPoints[eachGroup][0], groupedPoints[eachGroup])
+        secondPoint = furthestPointToP(firstPoint, groupedPoints[eachGroup])
+        lines.append(LineSegment(firstPoint, secondPoint))
+    return lines

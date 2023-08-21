@@ -91,7 +91,7 @@ floorLayout = allFloorLayouts[0]
 isRecording, headingDistanceSimulationRunning, triangulationSimulationRunning, placingBeacons = False, False, False, False
 notificationDisplayTime, mouseInputDelay = 0, 0
 headingDistanceToWall, distancesToBeacons, wallPoints, truePositions, trueHeadings = [], [], [], [], []
-pastPositions, pastHeadings, groupedPoints = [], [], dict()
+pastPositions, pastHeadings, groupedPoints, estimatedLines = [], [], dict(), []
 positionIndex = 0
 currentFloorLayout = []
 beacons = [Point(500, 100), Point(200, 300), Point(800, 700)]
@@ -121,9 +121,10 @@ while running:
         isMoving = True
         anyCollisions = checkCollisions(currentPosition, roombaRadius, floorLayout)
         if len(anyCollisions) > 0:
+            if len(wallPoints) == 0 or not isCircleTouching(wallPoints[len(wallPoints) - 1], roombaRadius/2, anyCollisions[0], 0):
+                wallPoints.extend(anyCollisions)
             currentPosition.x -= roombaSpeed * math.cos(roombaHeading)
             currentPosition.y -= roombaSpeed * math.sin(roombaHeading)
-            wallPoints.extend(anyCollisions)
             isMoving = False
     else:
         isMoving = False
@@ -149,7 +150,7 @@ while running:
                     floorLayout = allFloorLayouts[i]
                     currentPosition = Point(SCREEN_WIDTH/2, SCREEN_HEIGHT/2)
                     isRecording = False
-                    simulationRunning = False
+                    headingDistanceSimulationRunning, triangulationSimulationRunning = False, False
                     beacons.clear()
                 elif i == 3 and len(beacons) < 3:
                     placingBeacons = True
@@ -160,13 +161,10 @@ while running:
                     isRecording = not isRecording
                     simulationRunning = False
                     if isRecording:
-                        headingDistanceToWall = []
-                        distancesToBeacons = []
-                        wallPoints = []
+                        headingDistanceToWall, distancesToBeacons, wallPoints, trueHeadings, truePositions = [], [], [], [], []
                         startingPosition = Point(currentPosition.x, currentPosition.y)
                         currentFloorLayout = floorLayout.copy()
                         currentBeacons = beacons.copy()
-                        trueHeadings, truePositions = [], []
                 elif i == 6:
                     pass
                 elif i == 7 and not isRecording:
@@ -175,6 +173,7 @@ while running:
                     else:
                         estimatedPoints, pastPositions, pastHeadings = headingDistanceToPoints(Point(startingPosition.x, startingPosition.y), headingDistanceToWall)
                         groupedPoints = fitLineToData(list(estimatedPoints))
+                        estimatedLines = pointsToLines(groupedPoints)
                         headingDistanceSimulationRunning = not headingDistanceSimulationRunning
                         positionIndex = 0
                         floorLayout = currentFloorLayout.copy()
@@ -185,6 +184,7 @@ while running:
                         pastPositions, pastHeadings = triangulation(beacons, distancesToBeacons)
                         triangulationSimulationRunning = not triangulationSimulationRunning
                         groupedPoints = fitLineToData(removeDuplicatePoints(wallPoints))
+                        estimatedLines = pointsToLines(groupedPoints)
                         positionIndex = 0
                         floorLayout = currentFloorLayout.copy()
         if placingBeacons and mousePosition.x < SCREEN_WIDTH:
@@ -198,10 +198,12 @@ while running:
     if headingDistanceSimulationRunning or triangulationSimulationRunning:
         colorIndex = 0
         # Draws lines
-        for eachCollectionPoints in groupedPoints:
-            for eachPoint in groupedPoints[eachCollectionPoints]:
-                drawCircle(listOfColors[colorIndex], eachPoint, 2)
-            colorIndex += 1
+#        for eachCollectionPoints in groupedPoints:
+#            for eachPoint in groupedPoints[eachCollectionPoints]:
+#                drawCircle(listOfColors[colorIndex], eachPoint, 2)
+#            colorIndex += 1
+        for eachLine in estimatedLines:
+            drawLine(RED, eachLine)
         # Draws roomba
         if positionIndex < min(len(pastPositions), len(trueHeadings)):
             estimatedHeading, trueHeading = pastHeadings[positionIndex], trueHeadings[positionIndex]
