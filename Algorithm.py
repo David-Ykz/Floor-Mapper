@@ -133,7 +133,7 @@ def fitLineToData(points):
     # Returns an empty dictionary if there is insufficient data
     if len(points) < 2:
         return dict()
-    EPSILON = 1
+    EPSILON = 0.5
     VERTICAL_LINE_THRESHOLD = 10
     copiedPoints = points.copy()
     # Finds the closest point to (0, 0)
@@ -175,9 +175,27 @@ def fitLineToData(points):
             groupedPoints.update({closestPoint: [closestPoint, nextClosestPoint]})
             index, startingPoint = closestPoint, nextClosestPoint
             continueIterating = True
-#    if len(groupedPoints[closestPoint]) < 3:
-#        groupedPoints.pop(closestPoint)
     return groupedPoints
+
+def averageGroupedPoints(groupedPoints):
+    averagedGroup = dict()
+    averagedPoints = []
+    for eachGroup in groupedPoints:
+        averagedGroup.update({eachGroup:[]})
+        group = groupedPoints[eachGroup]
+        for i in range(len(group) - 1):
+#            averagedGroup[eachGroup].append(LineSegment(group[i], group[i + 1]).midPoint())
+            averagedPoints.append(LineSegment(group[i], group[i + 1]).midPoint())
+    return averagedPoints
+
+def averageNonGroupedPoints(points):
+    averagedPoints = []
+    THRESHOLD = 75
+    for i in range(len(points) - 1):
+        ls = LineSegment(points[i], points[i + 1])
+        if ls.length() < THRESHOLD:
+            averagedPoints.append(ls.midPoint())
+    return averagedPoints
 
 def absoluteDifference(a, b):
     if a > b:

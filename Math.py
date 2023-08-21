@@ -48,6 +48,10 @@ class LineSegment:
     def minY(self):
         return min(self.y1, self.y2)
 
+    def midPoint(self):
+        return Point((self.x1 + self.x2)/2, (self.y1 + self.y2)/2)
+
+
 class Rectangle:
     def __init__(self, x, y, w, h):
         self.topLeft = Point(x, y)

@@ -69,14 +69,14 @@ for i in range(8):
     elif i < 6:
         buttons.append(Rectangle(SCREEN_WIDTH + 20, SCREEN_HEIGHT - 70 - 50 * i, SIDEBAR_WIDTH - 40, 40))
     else:
-        buttons.append(Rectangle(SCREEN_WIDTH + 20, SCREEN_HEIGHT - 50 - 90 * i, SIDEBAR_WIDTH - 40, 70))
+        buttons.append(Rectangle(SCREEN_WIDTH + 20, SCREEN_HEIGHT - 90 * i, SIDEBAR_WIDTH - 40, 70))
 # Initialize Colors
-BLACK, WHITE, RED, LIGHT_GREEN = (0, 0, 0), (255, 255, 255), (255, 0, 0), (107, 241, 120)
+BLACK, WHITE, RED, LIGHT_GREEN, LIGHT_GREY = (0, 0, 0), (255, 255, 255), (255, 0, 0), (107, 241, 120), (200, 200, 200)
 listOfColors = []
 for i in range(10000):
     listOfColors.append((10 * random.randint(0, 25), 10 * random.randint(0, 25), 10 * random.randint(0, 25)))
 sliderX, sliderY = SCREEN_WIDTH + 35, 380
-slider = Slider(screen, sliderX, SCREEN_HEIGHT - sliderY, SIDEBAR_WIDTH - 70, 10, min=0, max=10, step=0.001, initial=0)
+slider = Slider(screen, sliderX, SCREEN_HEIGHT - sliderY, SIDEBAR_WIDTH - 70, 10, min=0, max=5, step=0.5, initial=0)
 randomNumbers = []
 for i in range(11):
     randomNumbers.append(random.randint(-1, 1))
@@ -93,27 +93,30 @@ allFloorLayouts = [basicBoxLayout, basicObstacleLayout, complexShapeLayout]
 floorLayout = allFloorLayouts[0]
 # Runtime
 isRecording, headingDistanceSimulationRunning, triangulationSimulationRunning, placingBeacons = False, False, False, False
-notificationDisplayTime, mouseInputDelay = 0, 0
+insufficientDataNotification, beaconProximityNotification, mouseInputDelay = 0, 0, 0
 headingDistanceToWall, distancesToBeacons, wallPoints, truePositions, trueHeadings = [], [], [], [], []
 pastPositions, pastHeadings, groupedPoints, estimatedLines = [], [], dict(), []
 positionIndex = 0
 currentFloorLayout = []
 beacons = [Point(500, 100), Point(200, 300), Point(800, 700)]
+beaconExclusionRadius = 100
 
 while running:
     # Handles timers
     if mouseInputDelay > 0:
         mouseInputDelay -= 1
-    if notificationDisplayTime > 0:
-        notificationDisplayTime -= 1
+    if insufficientDataNotification > 0:
+        insufficientDataNotification -= 1
+    if beaconProximityNotification > 0:
+        beaconProximityNotification -= 1
 
     # Stops the program if the pygame window is closed
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
 
-    noise = 1 / 100 * slider.getValue() ** 3
-
+    noise = slider.getValue()
+    noise = 1
 
     # Heading direction input
     if pygame.key.get_pressed()[pygame.K_LEFT]:
@@ -138,6 +141,10 @@ while running:
 
     # Draws background and side panel
     screen.fill(WHITE)
+    for beacon in beacons:
+        drawHollowCircle((0, 0, 255), beacon, 10, 1)
+        drawHollowCircle(LIGHT_GREY, beacon, beaconExclusionRadius, 1)
+
     drawRectangle((67, 80, 88), SCREEN_WIDTH, SCREEN_HEIGHT, SIDEBAR_WIDTH, SCREEN_HEIGHT)
     drawButtons(isRecording, headingDistanceSimulationRunning, triangulationSimulationRunning, len(beacons))
     writeText(LIGHT_GREEN, "Slide To Adjust Noise", 20, sliderX - 15, sliderY + 35)
@@ -173,7 +180,7 @@ while running:
                     isRecording = False
                 elif i == 5 and len(beacons) == 3: # Records Data
                     isRecording = not isRecording
-                    simulationRunning = False
+                    headingDistanceSimulationRunning, triangulationSimulationRunning = False, False
                     if isRecording:
                         headingDistanceToWall, distancesToBeacons, wallPoints, trueHeadings, truePositions = [], [], [], [], []
                         startingPosition = Point(currentPosition.x, currentPosition.y)
@@ -181,31 +188,51 @@ while running:
                         currentBeacons = beacons.copy()
                 elif i == 6 and not isRecording:
                     if len(headingDistanceToWall) == 0:
-                        notificationDisplayTime = 50
+                        insufficientDataNotification = 50
                     else:
-                        estimatedPoints, pastPositions, pastHeadings = headingDistanceToPoints(Point(startingPosition.x, startingPosition.y), headingDistanceToWall)
-                        groupedPoints = fitLineToData(list(estimatedPoints))
-                        estimatedLines = pointsToLines(groupedPoints)
                         headingDistanceSimulationRunning = not headingDistanceSimulationRunning
-                        positionIndex = 0
-                        floorLayout = currentFloorLayout.copy()
+                        if headingDistanceSimulationRunning:
+                            estimatedPoints, pastPositions, pastHeadings = headingDistanceToPoints(Point(startingPosition.x, startingPosition.y), headingDistanceToWall)
+#                            for i in range(int(noise)):
+#                                estimatedPoints = averageNonGroupedPoints(estimatedPoints)
+                            groupedPoints = fitLineToData(list(estimatedPoints))
+#                            for i in range(int(noise)):
+#                                averageGroups = averageGroupedPoints(groupedPoints)
+#                                groupedPoints = fitLineToData(averageGroups)
+                            estimatedLines = pointsToLines(groupedPoints)
+                            positionIndex = 0
+                            floorLayout = currentFloorLayout.copy()
                 elif i == 7 and not isRecording:
                     if len(distancesToBeacons) == 0:
-                        notificationDisplayTime = 50
+                        insufficientDataNotification = 50
                     else:
-                        pastPositions, pastHeadings = triangulation(beacons, distancesToBeacons)
                         triangulationSimulationRunning = not triangulationSimulationRunning
-                        groupedPoints = fitLineToData(removeDuplicatePoints(wallPoints))
-                        estimatedLines = pointsToLines(groupedPoints)
-                        positionIndex = 0
-                        floorLayout = currentFloorLayout.copy()
+                        if triangulationSimulationRunning:
+                            pastPositions, pastHeadings = triangulation(beacons, distancesToBeacons)
+                            groupedPoints = fitLineToData(removeDuplicatePoints(wallPoints))
+                            estimatedLines = pointsToLines(groupedPoints)
+                            positionIndex = 0
+                            floorLayout = currentFloorLayout.copy()
         if placingBeacons and mousePosition.x < SCREEN_WIDTH:
-            beacons.append(mousePosition)
-            placingBeacons = False
-
+            if len(beacons) == 0:
+                beacons.append(mousePosition)
+                placingBeacons = False
+            else:
+                properlySpaced = True
+                for eachBeacon in beacons:
+                    if LineSegment(eachBeacon, Point(mousePosition.x, mousePosition.y)).length() < beaconExclusionRadius:
+                        properlySpaced = False
+                        beaconProximityNotification = 50
+                if properlySpaced:
+                    beacons.append(mousePosition)
+                    placingBeacons = False
     # Handles simulations when running
-    if notificationDisplayTime > 0:
+    if insufficientDataNotification > 0:
         writeText(RED, "No data available", 20, SCREEN_WIDTH + 20, 50)
+    elif beaconProximityNotification > 0:
+        writeText(RED, "Place beacons further ", 20, SCREEN_WIDTH + 20, 50)
+        writeText(RED, "away from each other", 20, SCREEN_WIDTH + 20, 30)
+
 
     if headingDistanceSimulationRunning or triangulationSimulationRunning:
         colorIndex = 0
@@ -236,8 +263,6 @@ while running:
     if placingBeacons:
         drawHollowCircle((0, 0, 255), mousePosition, 10, 1)
 
-    for beacon in beacons:
-        drawHollowCircle((0, 0, 255), beacon, 10, 1)
 
     # Calculates line from roomba to border
     if math.sin(roombaHeading) == 1:  # Points straight down
@@ -266,7 +291,7 @@ while running:
 
     # Records data
     if isRecording and closestIntersection != -1:
-        adjustedHeading = round(math.degrees(roombaHeading) % 360 + noise/10 * random.randint(-1, 1), 4)
+        adjustedHeading = round(math.degrees(roombaHeading) % 360, 4)
         adjustedDistance = round(LineSegment(currentPosition, closestIntersection).length() + noise * random.randint(-1, 1), 4)
         headingDistanceToWall.append((adjustedHeading, adjustedDistance, isMoving, roombaSpeed))
         distanceToBeacon = []
