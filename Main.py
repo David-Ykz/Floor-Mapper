@@ -59,6 +59,7 @@ pygame.init()
 pygame.font.init()
 SCREEN_WIDTH, SCREEN_HEIGHT, SIDEBAR_WIDTH = 1200, 800, 200
 screen = pygame.display.set_mode((SCREEN_WIDTH + SIDEBAR_WIDTH, SCREEN_HEIGHT))
+
 clock = pygame.time.Clock()
 running = True
 buttons = []
@@ -76,7 +77,7 @@ listOfColors = []
 for i in range(10000):
     listOfColors.append((10 * random.randint(0, 25), 10 * random.randint(0, 25), 10 * random.randint(0, 25)))
 sliderX, sliderY = SCREEN_WIDTH + 35, 380
-slider = Slider(screen, sliderX, SCREEN_HEIGHT - sliderY, SIDEBAR_WIDTH - 70, 10, min=0, max=5, step=0.5, initial=0)
+slider = Slider(screen, sliderX, SCREEN_HEIGHT - sliderY, SIDEBAR_WIDTH - 70, 10, min=0, max=10, step=1, initial=0)
 randomNumbers = []
 for i in range(11):
     randomNumbers.append(random.randint(-1, 1))
@@ -101,6 +102,7 @@ currentFloorLayout = []
 beacons = [Point(500, 100), Point(200, 300), Point(800, 700)]
 beaconExclusionRadius = 100
 
+pygame.display.set_caption("Simulation")
 while running:
     # Handles timers
     if mouseInputDelay > 0:
@@ -116,7 +118,6 @@ while running:
             running = False
 
     noise = slider.getValue()
-    noise = 1
 
     # Heading direction input
     if pygame.key.get_pressed()[pygame.K_LEFT]:
@@ -237,10 +238,10 @@ while running:
     if headingDistanceSimulationRunning or triangulationSimulationRunning:
         colorIndex = 0
         # Draws lines
-#        for eachCollectionPoints in groupedPoints:
-#            for eachPoint in groupedPoints[eachCollectionPoints]:
-#                drawCircle(listOfColors[colorIndex], eachPoint, 2)
-#            colorIndex += 1
+        for eachCollectionPoints in groupedPoints:
+            for eachPoint in groupedPoints[eachCollectionPoints]:
+                drawCircle(listOfColors[colorIndex], eachPoint, 2)
+            colorIndex += 1
         for eachLine in estimatedLines:
             drawLine(RED, eachLine)
         # Draws roomba
@@ -292,7 +293,7 @@ while running:
     # Records data
     if isRecording and closestIntersection != -1:
         adjustedHeading = round(math.degrees(roombaHeading) % 360, 4)
-        adjustedDistance = round(LineSegment(currentPosition, closestIntersection).length() + noise * random.randint(-1, 1), 4)
+        adjustedDistance = round(LineSegment(currentPosition, closestIntersection).length() + noise/2 * random.randint(-1, 1), 4)
         headingDistanceToWall.append((adjustedHeading, adjustedDistance, isMoving, roombaSpeed))
         distanceToBeacon = []
         for eachBeacon in beacons:

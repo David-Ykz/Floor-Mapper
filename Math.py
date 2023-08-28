@@ -26,8 +26,8 @@ class LineSegment:
         return (self.y1 - self.y2) / (self.x1 - self.x2)
 
     def verticalSlope(self):
-        if self.y1 == self.y2:
-            print(self.x1, self.y1, self.x2, self.y2)
+        if self.isHorizontalLine():
+            return sys.maxsize
         return (self.x1 - self.x2) / (self.y1 - self.y2)
 
     def intercept(self):
@@ -35,6 +35,9 @@ class LineSegment:
 
     def isVerticalLine(self):
         return self.x1 == self.x2
+
+    def isHorizontalLine(self):
+        return self.y1 == self.y2
 
     def maxX(self):
         return max(self.x1, self.x2)
@@ -164,4 +167,22 @@ def circleLineIntersection(circleCenter, radius, m, intercept, isVertical):
             intercepts.append(Point(eachX, m * eachX + intercept))
         return intercepts
 
+def absoluteDifference(a, b):
+    if a > b:
+        return a - b
+    else:
+        return b - a
 
+def averageSlope(p, arr):
+    slopes = 0
+    for q in arr:
+        if p != q:
+            slopes += LineSegment(p, q).slope()
+    return slopes/(len(arr) - 1)
+
+def averageXY(arr):
+    averageX, averageY = 0, 0
+    for i in arr:
+        averageX += arr[i].x
+        averageY += arr[i].y
+    return averageX, averageY

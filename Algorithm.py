@@ -152,6 +152,40 @@ def fitLineToData(points):
         lineToPoint = LineSegment(startingPoint, closestPoint)
         # Checks if vertical line
         if abs(lineToPoint.slope()) > VERTICAL_LINE_THRESHOLD:
+            # Measures slope deviation compared to slope of points in the group
+            if abs(lineToPoint.verticalSlope()) < VERTICAL_LINE_THRESHOLD < abs(averageSlope(startingPoint, groupedPoints[index])):
+                groupedPoints[index].append(closestPoint)
+                if len(copiedPoints) > 1:
+                    startingPoint = closestPoint
+                    continueIterating = True
+            # If point is outside deviation bounds, it creates a new group
+            elif len(copiedPoints) > 2:
+                nextClosestPoint = closestPointToP(closestPoint, copiedPoints)
+                if absoluteDifference(LineSegment(nextClosestPoint, closestPoint).verticalSlope(), lineToPoint.verticalSlope()) > EPSILON:
+                    groupedPoints[index].append(closestPoint)
+                    startingPoint = closestPoint
+                else:
+                    groupedPoints.update({closestPoint: [closestPoint, nextClosestPoint]})
+                    index, startingPoint = closestPoint, nextClosestPoint
+                continueIterating = True
+        else:
+            if absoluteDifference(lineToPoint.slope(), averageSlope(startingPoint, groupedPoints[index])) < EPSILON:
+                groupedPoints[index].append(closestPoint)
+                if len(copiedPoints) > 1:
+                    startingPoint = closestPoint
+                    continueIterating = True
+            elif len(copiedPoints) > 2:
+                nextClosestPoint = closestPointToP(closestPoint, copiedPoints)
+                if absoluteDifference(LineSegment(nextClosestPoint, closestPoint).slope(), lineToPoint.slope()) > EPSILON:
+                    groupedPoints[index].append(closestPoint)
+                    startingPoint = closestPoint
+                else:
+                    groupedPoints.update({closestPoint: [closestPoint, nextClosestPoint]})
+                    index, startingPoint = closestPoint, nextClosestPoint
+                continueIterating = True
+
+
+        if abs(lineToPoint.slope()) > VERTICAL_LINE_THRESHOLD:
             # Measures slope deviation compared to sloe of points in the group
             if abs(lineToPoint.verticalSlope()) < VERTICAL_LINE_THRESHOLD < abs(averageSlope(startingPoint, groupedPoints[index])):
                 groupedPoints[index].append(closestPoint)
@@ -197,18 +231,7 @@ def averageNonGroupedPoints(points):
             averagedPoints.append(ls.midPoint())
     return averagedPoints
 
-def absoluteDifference(a, b):
-    if a > b:
-        return a - b
-    else:
-        return b - a
 
-def averageSlope(p, arr):
-    slopes = 0
-    for q in arr:
-        if p != q:
-            slopes += LineSegment(p, q).slope()
-    return slopes/(len(arr) - 1)
 
 def findClosestPoint(p, points, collection, index):
     EPSILON = 1
@@ -258,3 +281,6 @@ def pointsToLines(groupedPoints):
         secondPoint = furthestPointToP(firstPoint, groupedPoints[eachGroup])
         lines.append(LineSegment(firstPoint, secondPoint))
     return lines
+
+
+
