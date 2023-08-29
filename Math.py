@@ -150,7 +150,6 @@ def checkCollisions(circleCenter, radius, allObstacles):
                     collisions.extend(circleLineIntersection(circleCenter, radius, ls.slope(), ls.intercept(), False))
     return collisions
 
-
 def circleLineIntersection(circleCenter, radius, m, intercept, isVertical):
     if isVertical:
         if abs(circleCenter.x) - abs(intercept) == radius:
@@ -182,7 +181,7 @@ def averageSlope(p, arr):
 
 def averageXY(arr):
     averageX, averageY = 0, 0
-    for i in arr:
-        averageX += arr[i].x
-        averageY += arr[i].y
-    return averageX, averageY
+    for point in arr:
+        averageX += point.x
+        averageY += point.y
+    return averageX/len(arr), averageY/len(arr)

@@ -1,4 +1,4 @@
-from Math import *
+from CustomRegression import *
 
 def removeDuplicatePoints(data):
     alreadyVisited = set()
@@ -42,21 +42,27 @@ def triangulation(beaconCoordinates, data):
     b2 = beaconCoordinates[1]
     b3 = beaconCoordinates[2]
     for eachPoint in data:
-        m = - LineSegment(b1, b2).verticalSlope()
+        m = -LineSegment(b1, b2).verticalSlope()
         k = b1.x ** 2 + b1.y ** 2 - b2.x ** 2 - b2.y ** 2 + eachPoint[1] ** 2 - eachPoint[0] ** 2
         intercept = -k / (2 * (b2.y - b1.y))
         n = intercept - b1.y
         a = 1 + m ** 2
         b = -2 * b1.x + 2 * m * n
         c = b1.x ** 2 + n ** 2 - eachPoint[0] ** 2
-        intercepts = quadraticFormula(a, b, c)
-        for eachIntercept in intercepts:
-            y = m * eachIntercept + intercept
-            if (eachIntercept - b3.x) ** 2 + (y - b3.y) ** 2 - eachPoint[2] ** 2 < EPSILON:
-                positionData.append(Point(eachIntercept, y))
+        xIntercepts = quadraticFormula(a, b, c)
+        distances = []
+        for xInt in xIntercepts:
+            yInt = m * xInt + intercept
+            distances.append(distanceToCircle(Point(xInt, yInt), b3, eachPoint[2]))
+        if len(xIntercepts) == 0:
+            positionData.append(Point(xIntercepts[0], m * xIntercepts[0] + intercept))
+        elif distanceToCircle(Point(xIntercepts[0], m * xIntercepts[0] + intercept), b3, eachPoint[2]) < distanceToCircle(Point(xIntercepts[1], m * xIntercepts[1] + intercept), b3, eachPoint[2]):
+            positionData.append(Point(xIntercepts[0], m * xIntercepts[0] + intercept))
+        else:
+            positionData.append(Point(xIntercepts[1], m * xIntercepts[1] + intercept))
+
     for i in range(len(positionData) - 1):
         deltaX, deltaY = positionData[i + 1].x - positionData[i].x, positionData[i + 1].y - positionData[i].y
-
         if deltaX == 0 and deltaY == 0:
             if len(headingData) == 0:
                 angle = 0
@@ -79,6 +85,27 @@ def triangulation(beaconCoordinates, data):
     headingData.insert(0, headingData[0])
 
     return positionData, headingData
+
+def cleanPositionDataNoise(data, n):
+    averagedPoints = []
+    cleanedPoints = []
+    for i in range(int(len(data)/n)):
+        averageX, averageY = averageXY(data[n * i:n * (i + 1)])
+        averagedPoints.append(Point(averageX, averageY))
+    for i in range(len(averagedPoints) - 1):
+        cleanedPoints.extend(extrapolatePoints(averagedPoints[i], averagedPoints[i+1], n))
+    return cleanedPoints
+
+
+def extrapolatePoints(p1, p2, n):
+    points = [p1]
+    stepX, stepY = (p1.x - p2.x)/n, (p1.y - p2.y)/n
+    for i in range(n):
+        points.append(Point((i + 1) * stepX + p1.x, (i + 1) * stepY + p1.y))
+    return points
+
+def distanceToCircle(p, circleCenter, r):
+    return abs(LineSegment(p, circleCenter).length() - r)
 
 def computeCircleIntersectionsForPoints(points, r):
     intersectionsPerPoint = dict()
@@ -276,10 +303,32 @@ def furthestPointToP(p, points):
 
 def pointsToLines(groupedPoints):
     lines = []
+
     for eachGroup in groupedPoints:
         firstPoint = furthestPointToP(groupedPoints[eachGroup][0], groupedPoints[eachGroup])
         secondPoint = furthestPointToP(firstPoint, groupedPoints[eachGroup])
+        if len(groupedPoints[eachGroup]) > 4:
+            groupedPoints[eachGroup].remove(firstPoint)
+            groupedPoints[eachGroup].remove(secondPoint)
+            firstPoint = furthestPointToP(groupedPoints[eachGroup][0], groupedPoints[eachGroup])
+            secondPoint = furthestPointToP(firstPoint, groupedPoints[eachGroup])
+
         lines.append(LineSegment(firstPoint, secondPoint))
+
+#    lines.clear()
+#    slopeInterceptGroups = []
+#    intersectionPoints = []
+#    for eachGroup in groupedPoints:
+#        slope, intercept, isVertical = leastSquaresRegression(groupedPoints[eachGroup])
+#        slopeInterceptGroups.append((slope, intercept))
+#    for i in range(len(slopeInterceptGroups) - 1):
+#        firstLine = slopeInterceptGroups[i]
+#        secondLine = slopeInterceptGroups[i + 1]
+#        intersectionPoint = calculateLineIntersection(firstLine[0], firstLine[1], secondLine[0], secondLine[1])
+#        intersectionPoints.append(intersectionPoint)
+#        print(intersectionPoint.toString())
+#    for i in range(len(intersectionPoints) - 1):
+#        lines.append(LineSegment(intersectionPoints[i], intersectionPoints[i+1]))
     return lines
 
 

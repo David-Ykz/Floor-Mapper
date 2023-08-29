@@ -4,7 +4,7 @@ from Math import *
 def leastSquaresRegression(data):
     VERTICAL_LINE_THRESHOLD = 10
     averageX, averageY = averageXY(data)
-    if averageSlope(Point(-1, -1), data) > VERTICAL_LINE_THRESHOLD: # Vertical Line
+    if abs(averageSlope(Point(-1, -1), data)) > VERTICAL_LINE_THRESHOLD and 0 == 1: # Vertical Line
         slope = calculateRegressionSlope(data, True)
         intercept = averageX - slope * averageY
         return slope, intercept, True
@@ -18,11 +18,11 @@ def calculateRegressionSlope(data, isVertical):
     numerator = 0
     denominator = 0
     if isVertical:
-        for i in data:
-            numerator += (data[i].y - averageY) * (data[i].x - averageX)
-            denominator += (data[i].y - averageY) ** 2
+        for point in data:
+            numerator += (point.y - averageY) * (point.x - averageX)
+            denominator += (point.y - averageY) ** 2
     else:
-        for i in data:
-            numerator += (data[i].x - averageX) * (data[i].y - averageY)
-            denominator += (data[i].x - averageX) ** 2
+        for point in data:
+            numerator += (point.x - averageX) * (point.y - averageY)
+            denominator += (point.x - averageX) ** 2
     return numerator/denominator

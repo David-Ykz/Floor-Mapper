@@ -249,7 +249,7 @@ while running:
             estimatedHeading, trueHeading = pastHeadings[positionIndex], trueHeadings[positionIndex]
             # True roomba data
             drawHollowCircle(BLACK, truePositions[positionIndex], roombaRadius, 1)
-            drawLine(BLACK, LineSegment(truePositions[positionIndex], Point(truePositions[positionIndex].x + 40 * math.cos(math.radians(trueHeading)), pastPositions[positionIndex].y + 40 * math.sin(math.radians(trueHeading)))))
+            drawLine(BLACK, LineSegment(truePositions[positionIndex], Point(truePositions[positionIndex].x + 40 * math.cos(math.radians(trueHeading)), truePositions[positionIndex].y + 40 * math.sin(math.radians(trueHeading)))))
             # Estimated roomba data
             drawHollowCircle(RED, pastPositions[positionIndex], roombaRadius, 1)
             drawLine(RED, LineSegment(pastPositions[positionIndex], Point(pastPositions[positionIndex].x + 40 * math.cos(math.radians(estimatedHeading)), pastPositions[positionIndex].y + 40 * math.sin(math.radians(estimatedHeading)))))
@@ -297,7 +297,7 @@ while running:
         headingDistanceToWall.append((adjustedHeading, adjustedDistance, isMoving, roombaSpeed))
         distanceToBeacon = []
         for eachBeacon in beacons:
-            distanceToBeacon.append(LineSegment(currentPosition, eachBeacon).length())
+            distanceToBeacon.append(round(LineSegment(currentPosition, eachBeacon).length() + noise/4 * random.randint(-1, 1), 8))
         distancesToBeacons.append(distanceToBeacon)
         truePositions.append(Point(currentPosition.x, currentPosition.y))
         trueHeadings.append(round(math.degrees(roombaHeading) % 360, 4))
