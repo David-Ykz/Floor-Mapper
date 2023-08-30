@@ -100,6 +100,7 @@ pastPositions, pastHeadings, groupedPoints, estimatedLines = [], [], dict(), []
 positionIndex = 0
 currentFloorLayout = []
 beacons = [Point(500, 100), Point(200, 300), Point(800, 700)]
+currentBeacons = []
 beaconExclusionRadius = 100
 
 pygame.display.set_caption("Simulation")
@@ -192,6 +193,7 @@ while running:
                         insufficientDataNotification = 50
                     else:
                         headingDistanceSimulationRunning = not headingDistanceSimulationRunning
+                        triangulationSimulationRunning = False
                         if headingDistanceSimulationRunning:
                             estimatedPoints, pastPositions, pastHeadings = headingDistanceToPoints(Point(startingPosition.x, startingPosition.y), headingDistanceToWall)
 #                            for i in range(int(noise)):
@@ -208,8 +210,9 @@ while running:
                         insufficientDataNotification = 50
                     else:
                         triangulationSimulationRunning = not triangulationSimulationRunning
+                        headingDistanceSimulationRunning = False
                         if triangulationSimulationRunning:
-                            pastPositions, pastHeadings = triangulation(beacons, distancesToBeacons)
+                            pastPositions, pastHeadings = triangulation(currentBeacons, distancesToBeacons)
                             groupedPoints = fitLineToData(removeDuplicatePoints(wallPoints))
                             estimatedLines = pointsToLines(groupedPoints)
                             positionIndex = 0

@@ -164,6 +164,7 @@ def fitLineToData(points):
     VERTICAL_LINE_THRESHOLD = 10
     copiedPoints = points.copy()
     # Finds the closest point to (0, 0)
+    print(len(points))
     startingPoint = closestPointToP(Point(0, 0), copiedPoints)
     # Finds the closest point to the starting point
     closestPoint = closestPointToP(startingPoint, copiedPoints)
